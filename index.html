@@ -11,8 +11,15 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <!-- Mobile header bar -->
+  <div class="mobile-header">
+    <button class="mobile-hamburger" id="mobile-toggle">☰</button>
+    <span class="mobile-header-title">POE 레벨링</span>
+  </div>
+
   <aside class="sidebar">
     <div class="sidebar-title">POE 레벨링</div>
+    <button class="btn btn-gem" id="btn-gems">💎 젬 선택</button>
     <nav id="nav-links"></nav>
     <hr class="sidebar-divider">
     <div class="sidebar-actions">
@@ -23,7 +30,6 @@
   </aside>
 
   <div class="mobile-overlay"></div>
-  <button class="mobile-toggle" id="mobile-toggle">☰</button>
 
   <main class="main">
     <div class="header">
@@ -34,7 +40,32 @@
     <div id="content"></div>
   </main>
 
+  <!-- Gem Modal -->
+  <div class="gem-modal-overlay" id="gem-modal-overlay">
+    <div class="gem-modal">
+      <div class="gem-modal-header">
+        <span class="gem-modal-title">젬 선택</span>
+        <button class="gem-modal-close" id="gem-modal-close">✕</button>
+      </div>
+      <div class="gem-toolbar">
+        <select class="gem-class-select" id="gem-class-select"></select>
+        <div class="gem-tabs">
+          <button class="gem-tab active" data-tab="quest">퀘스트 보상</button>
+          <button class="gem-tab" data-tab="vendor">상인 판매</button>
+        </div>
+        <input type="text" class="gem-search" id="gem-search" placeholder="젬 검색...">
+      </div>
+      <div class="gem-modal-body" id="gem-modal-body"></div>
+      <div class="gem-modal-footer">
+        <span class="gem-selected-count" id="gem-selected-count">선택: 0개</span>
+        <button class="gem-reset-all" id="gem-reset-all">전체 해제</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/data.js"></script>
+  <script src="js/gems.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/gems-app.js"></script>
 </body>
 </html>
