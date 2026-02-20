@@ -66,35 +66,36 @@
 
     const gemClass = localStorage.getItem(GEM_CLASS_KEY) || 'witch';
     const results = [];
-    const seen = new Set();
 
-    // Quest rewards first (pick from reward)
+    // Quest rewards (pick from reward) — dedupe within source
+    const seenQuest = new Set();
     (GEM_DATA.questRewards || []).forEach(group => {
       const key = `${group.act}-${group.questName}`;
       const mapping = QUEST_STEP_MAP[key];
       if (!mapping || mapping.section !== sectionId || mapping.step !== stepIdx) return;
       group.rewards.forEach(r => {
-        if (!selected[r.gemId] || seen.has(r.gemId)) return;
+        if (!selected[r.gemId] || seenQuest.has(r.gemId)) return;
         if (r.classes && r.classes.length > 0 && !r.classes.includes(gemClass)) return;
         const gem = GEM_DATA.gems.find(g => g.id === r.gemId);
         if (gem) {
-          seen.add(gem.id);
+          seenQuest.add(gem.id);
           results.push({ gem, sourceType: 'quest', questName: group.questName });
         }
       });
     });
 
-    // Vendor rewards second (buy from NPC)
+    // Vendor rewards (buy from NPC) — dedupe within source, independent from quest
+    const seenVendor = new Set();
     (GEM_DATA.vendorRewards || []).forEach(group => {
       const key = `${group.act}-${group.questName}`;
       const mapping = QUEST_STEP_MAP[key];
       if (!mapping || mapping.section !== sectionId || mapping.step !== stepIdx) return;
       group.rewards.forEach(r => {
-        if (!selected[r.gemId] || seen.has(r.gemId)) return;
+        if (!selected[r.gemId] || seenVendor.has(r.gemId)) return;
         if (r.classes && r.classes.length > 0 && !r.classes.includes(gemClass)) return;
         const gem = GEM_DATA.gems.find(g => g.id === r.gemId);
         if (gem) {
-          seen.add(gem.id);
+          seenVendor.add(gem.id);
           results.push({ gem, sourceType: 'vendor', questName: group.questName, npc: group.npc });
         }
       });
@@ -110,7 +111,7 @@
     let insertAfter = li;
     gemInfos.forEach(info => {
       const { gem, sourceType, questName, npc } = info;
-      const gemStepId = `${sectionId}-gem-${gem.id}-${stepIdx}`;
+      const gemStepId = `${sectionId}-gem-${gem.id}-${sourceType}-${stepIdx}`;
       const isChecked = !!checks[gemStepId];
 
       const gemLi = document.createElement('li');
