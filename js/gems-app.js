@@ -18,10 +18,12 @@
 
   function saveGems() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedGems));
+    window.dispatchEvent(new CustomEvent('gems-changed'));
   }
 
   function saveClass() {
     localStorage.setItem(CLASS_KEY, selectedClass);
+    window.dispatchEvent(new CustomEvent('gems-changed'));
   }
 
   // Check if GEM_DATA is available
@@ -137,9 +139,25 @@
         card.dataset.selected = !!selectedGems[gem.id];
         card.dataset.gemId = gem.id;
 
-        const dot = document.createElement('span');
-        dot.className = `gem-dot ${gem.color}`;
-        card.appendChild(dot);
+        if (gem.icon) {
+          const img = document.createElement('img');
+          img.className = 'gem-icon';
+          img.src = `https://cdn.poedb.tw/image/${gem.icon}`;
+          img.alt = gem.name;
+          img.width = 24;
+          img.height = 24;
+          img.loading = 'lazy';
+          img.onerror = function() {
+            const dot = document.createElement('span');
+            dot.className = `gem-dot ${gem.color}`;
+            this.replaceWith(dot);
+          };
+          card.appendChild(img);
+        } else {
+          const dot = document.createElement('span');
+          dot.className = `gem-dot ${gem.color}`;
+          card.appendChild(dot);
+        }
 
         const name = document.createElement('span');
         name.className = 'gem-name';
@@ -155,6 +173,16 @@
 
         card.addEventListener('click', () => {
           onGemClick(gem.id, qKey, filteredRewards);
+        });
+
+        card.addEventListener('mouseenter', (e) => {
+          showTooltip(gem, e);
+        });
+        card.addEventListener('mouseleave', () => {
+          hideTooltip();
+        });
+        card.addEventListener('mousemove', (e) => {
+          positionTooltip(e);
         });
 
         grid.appendChild(card);
@@ -206,6 +234,62 @@
     }
   }
 
+  // Tooltip
+  const COLOR_LABELS = { str: '힘', dex: '민첩', int: '지능' };
+
+  function showTooltip(gem, e) {
+    const tooltip = document.getElementById('gem-tooltip');
+    if (!tooltip) return;
+
+    const iconEl = document.getElementById('gem-tooltip-icon');
+    const nameEl = document.getElementById('gem-tooltip-name');
+    const typeEl = document.getElementById('gem-tooltip-type');
+    const attrEl = document.getElementById('gem-tooltip-attr');
+
+    if (gem.icon) {
+      iconEl.src = `https://cdn.poedb.tw/image/${gem.icon}`;
+      iconEl.style.display = '';
+    } else {
+      iconEl.style.display = 'none';
+    }
+
+    nameEl.textContent = gem.name;
+    typeEl.textContent = gem.type === 'support' ? '보조 젬' : '스킬 젬';
+    attrEl.textContent = COLOR_LABELS[gem.color] || '';
+    attrEl.className = `gem-tooltip-attr ${gem.color}`;
+
+    tooltip.style.display = 'flex';
+    positionTooltip(e);
+  }
+
+  function hideTooltip() {
+    const tooltip = document.getElementById('gem-tooltip');
+    if (tooltip) tooltip.style.display = 'none';
+  }
+
+  function positionTooltip(e) {
+    const tooltip = document.getElementById('gem-tooltip');
+    if (!tooltip || tooltip.style.display === 'none') return;
+
+    const offset = 12;
+    let x = e.clientX + offset;
+    let y = e.clientY + offset;
+
+    const rect = tooltip.getBoundingClientRect();
+    const w = rect.width || 200;
+    const h = rect.height || 80;
+
+    if (x + w > window.innerWidth - 8) {
+      x = e.clientX - w - offset;
+    }
+    if (y + h > window.innerHeight - 8) {
+      y = e.clientY - h - offset;
+    }
+
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+  }
+
   // Modal control
   function openModal() {
     const overlay = document.getElementById('gem-modal-overlay');
@@ -218,6 +302,7 @@
   }
 
   function closeModal() {
+    hideTooltip();
     const overlay = document.getElementById('gem-modal-overlay');
     if (overlay) {
       overlay.classList.remove('open');
@@ -299,6 +384,12 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeModal();
     });
+
+    // Hide tooltip on scroll
+    const modalBody = document.getElementById('gem-modal-body');
+    if (modalBody) {
+      modalBody.addEventListener('scroll', hideTooltip);
+    }
   }
 
   // Expose for external reset (from app.js new league / clear all)

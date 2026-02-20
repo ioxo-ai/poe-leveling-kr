@@ -1,5 +1,13 @@
 @import url('https://rsms.me/inter/inter.css');
 
+@font-face {
+  font-family: 'Fontin';
+  src: url('../fonts/Fontin-SmallCaps.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --gold: #b49e79;
   --gold-dim: #8a7a5e;
@@ -10,10 +18,9 @@
   --bg-tips: rgba(0, 0, 0, 0.85);
   --text-gray: #d1d5db;
   --text-dim: #6b7280;
-  --sidebar-width: 200px;
+  --top-bar-height: 44px;
   --font-body: 'Inter var', 'Inter', sans-serif;
-  --font-heading: Georgia, Cambria, 'Times New Roman', Times, serif;
-  --mobile-header-height: 56px;
+  --font-heading: 'Fontin', Georgia, Cambria, 'Times New Roman', Times, serif;
 }
 
 * {
@@ -39,58 +46,111 @@ body {
   line-height: 1.6;
 }
 
-/* ─── Sidebar ─── */
-.sidebar {
+/* ─── Top Bar ─── */
+.top-bar {
   position: fixed;
   top: 0;
   left: 0;
-  width: var(--sidebar-width);
-  height: 100vh;
-  padding: 20px 12px;
+  right: 0;
+  height: var(--top-bar-height);
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
   z-index: 100;
-  background: linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.75) 100%);
-  border-right: 1px solid rgba(180, 158, 121, 0.15);
-  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.92);
+  border-bottom: 1px solid rgba(180, 158, 121, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-.sidebar-title {
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+}
+
+.top-bar-title {
   font-family: var(--font-heading);
   font-size: 15px;
   color: var(--gold);
-  text-align: center;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(180, 158, 121, 0.2);
-  margin-bottom: 4px;
   letter-spacing: 1px;
 }
 
-.sidebar nav {
+.toggle-new-league {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-gray);
+  padding: 4px 10px;
+  border: 1px solid rgba(180, 158, 121, 0.3);
+  border-radius: 4px;
+  transition: all 0.15s;
+  user-select: none;
 }
 
-.sidebar nav a {
+.toggle-new-league:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.toggle-new-league input[type="checkbox"] {
+  accent-color: var(--teal);
+  cursor: pointer;
+}
+
+/* ─── Floating TOC Overlay ─── */
+.toc-overlay {
+  position: fixed;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(180, 158, 121, 0.15);
+  border-radius: 8px;
+  padding: 8px 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.toc-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.toc-overlay a {
   color: var(--text-gray);
   text-decoration: none;
-  font-size: 13px;
-  padding: 5px 8px;
+  font-size: 12px;
+  padding: 4px 8px;
   border-radius: 4px;
   transition: all 0.15s;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  white-space: nowrap;
 }
 
-.sidebar nav a:hover {
+.toc-overlay a:hover {
   background: rgba(180, 158, 121, 0.15);
   color: var(--gold);
 }
 
-.sidebar nav a.active {
+.toc-overlay a.active {
   background: rgba(27, 162, 155, 0.2);
   color: var(--teal);
 }
@@ -107,34 +167,19 @@ body {
 .nav-pct {
   font-size: 10px;
   color: var(--text-dim);
-  min-width: 28px;
+  min-width: 24px;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-.sidebar nav a.active .nav-pct {
+.toc-overlay a.active .nav-pct {
   color: var(--teal);
-}
-
-.sidebar-divider {
-  border: none;
-  border-top: 1px solid rgba(180, 158, 121, 0.15);
-  margin: 8px 0;
-}
-
-.sidebar-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: auto;
-  padding-top: 8px;
 }
 
 /* ─── Buttons ─── */
 .btn {
-  display: block;
-  width: 100%;
-  padding: 8px 12px;
+  display: inline-block;
+  padding: 6px 12px;
   border: none;
   border-radius: 4px;
   font-family: var(--font-heading);
@@ -142,15 +187,12 @@ body {
   cursor: pointer;
   text-align: center;
   transition: all 0.15s;
+  white-space: nowrap;
 }
 
-.btn-teal {
-  background: var(--teal);
-  color: var(--white);
-}
-
-.btn-teal:hover {
-  background: var(--teal-hover);
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
 }
 
 .btn-outline {
@@ -190,8 +232,8 @@ body {
 
 /* ─── Main content ─── */
 .main {
-  margin-left: var(--sidebar-width);
-  padding: 30px 40px 60px;
+  margin: 0 auto;
+  padding: calc(var(--top-bar-height) + 20px) 40px 60px;
   max-width: 940px;
 }
 
@@ -353,6 +395,7 @@ body {
 .step-item {
   display: flex;
   align-items: flex-start;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 7px 8px 7px 10px;
   border-radius: 4px;
@@ -419,69 +462,14 @@ body {
   opacity: 0.5;
 }
 
-/* ─── Mobile Header Bar ─── */
-.mobile-header {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: var(--mobile-header-height);
-  background: rgba(0, 0, 0, 0.92);
-  border-bottom: 1px solid rgba(180, 158, 121, 0.15);
-  z-index: 200;
-  align-items: center;
-  padding: 0 16px;
-  gap: 12px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+/* ─── New League Step Marker ─── */
+.step-item.new-league-step {
+  border-left-color: var(--teal);
+  border-left-style: dashed;
 }
 
-.mobile-header-title {
-  font-family: var(--font-heading);
-  font-size: 16px;
-  color: var(--gold);
-  letter-spacing: 1px;
-}
-
-.mobile-hamburger {
-  width: 40px;
-  height: 40px;
-  background: none;
-  border: none;
-  color: var(--text-gray);
-  font-size: 22px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.15s;
-}
-
-.mobile-hamburger:hover {
-  background: rgba(180, 158, 121, 0.15);
-  color: var(--gold);
-}
-
-/* Old circle toggle — hidden */
-.mobile-toggle {
-  display: none !important;
-}
-
-/* Mobile overlay */
-.mobile-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 99;
-}
-
-.mobile-overlay.show {
-  display: block;
+.step-item.new-league-step.checked {
+  border-left-style: solid;
 }
 
 /* ─── Gem Modal ─── */
@@ -706,6 +694,14 @@ body {
   color: var(--teal);
 }
 
+.gem-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+}
+
 .gem-dot {
   width: 8px;
   height: 8px;
@@ -760,27 +756,161 @@ body {
   background: rgba(239, 68, 68, 0.1);
 }
 
+/* ─── Gem Tooltip ─── */
+.gem-tooltip {
+  position: fixed;
+  z-index: 400;
+  display: none;
+  align-items: flex-start;
+  background: #1a1a1a;
+  border: 1px solid rgba(180, 158, 121, 0.4);
+  border-radius: 6px;
+  padding: 10px 12px;
+  gap: 10px;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  max-width: 280px;
+}
+
+.gem-tooltip-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+}
+
+.gem-tooltip-name {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  color: #e8dcc8;
+  margin-bottom: 2px;
+}
+
+.gem-tooltip-type {
+  font-size: 12px;
+  color: #999;
+}
+
+.gem-tooltip-attr {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.gem-tooltip-attr.str { color: #e74c3c; }
+.gem-tooltip-attr.dex { color: #2ecc71; }
+.gem-tooltip-attr.int { color: #3498db; }
+
+/* ─── Step Entity Highlighting ─── */
+.zone {
+  color: rgb(206, 197, 159);
+  font-weight: 600;
+}
+
+.npc {
+  color: #ffffff;
+  font-family: var(--font-heading);
+}
+
+.boss {
+  color: rgb(234, 88, 12);
+  font-weight: 600;
+}
+
+.waypoint {
+  color: #5b9bd5;
+  font-weight: 600;
+}
+
+.tp {
+  color: #5b9bd5;
+  font-weight: 600;
+}
+
+.quest {
+  color: #4ae63a;
+  font-weight: 600;
+}
+
+.trial {
+  color: #ffffff;
+  font-weight: 600;
+  font-style: italic;
+}
+
+/* ─── Gem Steps ─── */
+.step-item.gem-step {
+  margin-left: 24px;
+  border-left-width: 2px;
+  border-left-style: solid;
+}
+
+.step-item.gem-step.str,
+.step-item.gem-step.str:hover,
+.step-item.gem-step.str.checked { border-left-color: #e74c3c; }
+
+.step-item.gem-step.dex,
+.step-item.gem-step.dex:hover,
+.step-item.gem-step.dex.checked { border-left-color: #2ecc71; }
+
+.step-item.gem-step.int,
+.step-item.gem-step.int:hover,
+.step-item.gem-step.int.checked { border-left-color: #3498db; }
+
+.step-item.gem-step label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+}
+
+.gem-step-icon {
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.gem-name-text.str { color: #e74c3c; }
+.gem-name-text.dex { color: #2ecc71; }
+.gem-name-text.int { color: #3498db; }
+
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
-  .mobile-header {
-    display: flex;
+  .top-bar {
+    padding: 0 8px;
+    gap: 4px;
   }
 
-  .sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.3s;
-    width: 240px;
-    padding-top: calc(var(--mobile-header-height) + 12px);
+  .top-bar-left {
+    gap: 4px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
   }
 
-  .sidebar.open {
-    transform: translateX(0);
+  .top-bar-title {
+    font-size: 13px;
+  }
+
+  .btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .btn-sm {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+
+  .toggle-new-league {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+
+  .toc-overlay {
+    display: none;
   }
 
   .main {
-    margin-left: 0;
-    padding: 20px 16px 80px;
-    padding-top: calc(var(--mobile-header-height) + 16px);
+    padding: calc(var(--top-bar-height) + 12px) 16px 80px;
   }
 
   .header h1 {
@@ -804,5 +934,9 @@ body {
 
   .gem-toolbar {
     padding: 10px 14px;
+  }
+
+  .gem-tooltip {
+    display: none !important;
   }
 }
