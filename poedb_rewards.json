@@ -30,6 +30,25 @@
       ]
     },
     {
+      "act": 1, "questName": "자비로운 임무", "questEngName": "Mercy_Mission",
+      "gems": [
+        ["Ancestral_Call_Support", ["duelist", "marauder", "scion", "templar"]],
+        ["Arcane_Surge_Support", ["scion", "templar"]],
+        ["Chance_to_Bleed_Support", ["marauder", "scion", "templar"]],
+        ["Chance_to_Poison_Support", ["duelist", "ranger", "scion", "witch"]],
+        ["Elemental_Proliferation_Support", ["scion", "shadow", "witch"]],
+        ["Infused_Channelling_Support", ["scion", "shadow", "templar", "witch"]],
+        ["Mirage_Archer_Support", ["duelist", "ranger"]],
+        ["Momentum_Support", ["duelist", "marauder", "scion", "shadow"]],
+        ["Pierce_Support", ["duelist", "ranger", "scion", "shadow"]],
+        ["Ruthless_Support", ["duelist", "scion", "templar"]],
+        ["Spell_Cascade_Support", ["scion", "shadow", "templar", "witch"]],
+        ["Summon_Phantasm_Support", ["scion", "witch"]],
+        ["Swift_Assembly_Support", ["shadow"]],
+        ["Volley_Support", ["duelist", "ranger", "scion", "shadow"]]
+      ]
+    },
+    {
       "act": 1, "questName": "로아 알 깨트리기", "questEngName": "Breaking_Some_Eggs",
       "gems": [
         ["Decoy_Totem", ["marauder", "scion", "duelist"]],
