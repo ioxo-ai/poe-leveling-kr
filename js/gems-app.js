@@ -1,23 +1,54 @@
 (() => {
-  const STORAGE_KEY = 'poe-leveling-kr-gems';
+  const REWARD_STORAGE_KEY = 'poe-leveling-kr-gems-reward';
+  const VENDOR_STORAGE_KEY = 'poe-leveling-kr-gems-vendor';
+  const LEGACY_STORAGE_KEY = 'poe-leveling-kr-gems'; // migration from single key
   const CLASS_KEY = 'poe-leveling-kr-gem-class';
+  const ENGLISH_KEY = 'poe-leveling-kr-english';
 
-  // State
-  let selectedGems = loadGems();
+  function isEnglishOn() {
+    return localStorage.getItem(ENGLISH_KEY) !== 'false';
+  }
+
+  // State: separate for quest rewards vs vendor purchases
+  let selectedRewardGems = loadRewardGems();
+  let selectedVendorGems = loadVendorGems();
   let selectedClass = localStorage.getItem(CLASS_KEY) || 'witch';
   let activeTab = 'quest';
   let searchQuery = '';
 
-  function loadGems() {
+  function loadRewardGems() {
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+      const raw = localStorage.getItem(REWARD_STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+      // Migrate from legacy single key into reward only
+      const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (legacy) {
+        const parsed = JSON.parse(legacy);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        return parsed;
+      }
+      return {};
     } catch {
       return {};
     }
   }
 
+  function loadVendorGems() {
+    try {
+      return JSON.parse(localStorage.getItem(VENDOR_STORAGE_KEY)) || {};
+    } catch {
+      return {};
+    }
+  }
+
+  function getSelectedGemsForTab() {
+    return activeTab === 'quest' ? selectedRewardGems : selectedVendorGems;
+  }
+
   function saveGems() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedGems));
+    localStorage.setItem(REWARD_STORAGE_KEY, JSON.stringify(selectedRewardGems));
+    localStorage.setItem(VENDOR_STORAGE_KEY, JSON.stringify(selectedVendorGems));
+    console.log('[gems-app] saveGems: reward keys=', Object.keys(selectedRewardGems).length, 'vendor keys=', Object.keys(selectedVendorGems).length);
     window.dispatchEvent(new CustomEvent('gems-changed'));
   }
 
@@ -52,9 +83,11 @@
     return `${act}-${questName}`;
   }
 
-  // Get count of selected gems
+  // Get count of selected gems (reward + vendor)
   function getSelectedCount() {
-    return Object.keys(selectedGems).filter(k => selectedGems[k]).length;
+    const rewardCount = Object.keys(selectedRewardGems).filter(k => selectedRewardGems[k]).length;
+    const vendorCount = Object.keys(selectedVendorGems).filter(k => selectedVendorGems[k]).length;
+    return rewardCount + vendorCount;
   }
 
   // Rendering
@@ -79,7 +112,8 @@
       if (filteredRewards.length === 0) return;
 
       const qKey = questKey(group.act, group.questName);
-      const selectedInGroup = filteredRewards.filter(r => selectedGems[r.gemId]).length;
+      const selected = getSelectedGemsForTab();
+      const selectedInGroup = filteredRewards.filter(r => selected[r.gemId]).length;
 
       const groupDiv = document.createElement('div');
       groupDiv.className = 'gem-quest-group';
@@ -91,7 +125,9 @@
       const titleSpan = document.createElement('span');
       titleSpan.className = 'gem-quest-title';
       const npcStr = group.npc ? ` (${group.npc})` : '';
-      titleSpan.textContent = `${group.act}장 — ${group.questName}${npcStr}`;
+      const engQuest = isEnglishOn() ? getEnglishName('quest', group.questName) : '';
+      const engStr = engQuest ? ` ${engQuest.toUpperCase()}` : '';
+      titleSpan.textContent = `${group.act}장 — ${group.questName}${engStr}${npcStr}`;
       header.appendChild(titleSpan);
 
       const rightSide = document.createElement('span');
@@ -113,8 +149,9 @@
         resetBtn.className = 'gem-quest-reset';
         resetBtn.textContent = '초기화';
         resetBtn.addEventListener('click', () => {
+          const selected = getSelectedGemsForTab();
           filteredRewards.forEach(r => {
-            delete selectedGems[r.gemId];
+            delete selected[r.gemId];
           });
           saveGems();
           renderBody();
@@ -136,13 +173,13 @@
 
         const card = document.createElement('div');
         card.className = 'gem-card';
-        card.dataset.selected = !!selectedGems[gem.id];
+        card.dataset.selected = !!getSelectedGemsForTab()[gem.id];
         card.dataset.gemId = gem.id;
 
         if (gem.icon) {
           const img = document.createElement('img');
           img.className = 'gem-icon';
-          img.src = `https://cdn.poedb.tw/image/${gem.icon}`;
+          img.src = `img/gems/${gem.icon}`;
           img.alt = gem.name;
           img.width = 24;
           img.height = 24;
@@ -162,6 +199,12 @@
         const name = document.createElement('span');
         name.className = 'gem-name';
         name.textContent = gem.name;
+        if (isEnglishOn()) {
+          const eng = document.createElement('span');
+          eng.className = 'eng-anno';
+          eng.textContent = gemEngName(gem.id);
+          name.appendChild(eng);
+        }
         card.appendChild(name);
 
         if (gem.type === 'support') {
@@ -201,24 +244,23 @@
   }
 
   function onGemClick(gemId, qKey, groupRewards) {
+    const selected = getSelectedGemsForTab();
     if (activeTab === 'quest') {
       // Quest tab: max 1 per group
-      if (selectedGems[gemId]) {
-        // Deselect
-        delete selectedGems[gemId];
+      if (selected[gemId]) {
+        delete selected[gemId];
       } else {
-        // Deselect others in same group, select this one
         groupRewards.forEach(r => {
-          delete selectedGems[r.gemId];
+          delete selected[r.gemId];
         });
-        selectedGems[gemId] = true;
+        selected[gemId] = true;
       }
     } else {
       // Vendor tab: toggle freely
-      if (selectedGems[gemId]) {
-        delete selectedGems[gemId];
+      if (selected[gemId]) {
+        delete selected[gemId];
       } else {
-        selectedGems[gemId] = true;
+        selected[gemId] = true;
       }
     }
 
@@ -247,13 +289,13 @@
     const attrEl = document.getElementById('gem-tooltip-attr');
 
     if (gem.icon) {
-      iconEl.src = `https://cdn.poedb.tw/image/${gem.icon}`;
+      iconEl.src = `img/gems/${gem.icon}`;
       iconEl.style.display = '';
     } else {
       iconEl.style.display = 'none';
     }
 
-    nameEl.textContent = gem.name;
+    nameEl.textContent = isEnglishOn() ? `${gem.name} ${gemEngName(gem.id).toUpperCase()}` : gem.name;
     typeEl.textContent = gem.type === 'support' ? '보조 젬' : '스킬 젬';
     attrEl.textContent = COLOR_LABELS[gem.color] || '';
     attrEl.className = `gem-tooltip-attr ${gem.color}`;
@@ -320,7 +362,9 @@
       GEM_DATA.classes.forEach(cls => {
         const opt = document.createElement('option');
         opt.value = cls.id;
-        opt.textContent = cls.name;
+        opt.textContent = isEnglishOn()
+          ? `${cls.name} (${cls.id.charAt(0).toUpperCase() + cls.id.slice(1)})`
+          : cls.name;
         classSelect.appendChild(opt);
       });
       classSelect.value = selectedClass;
@@ -373,7 +417,8 @@
     const resetAll = document.getElementById('gem-reset-all');
     if (resetAll) {
       resetAll.addEventListener('click', () => {
-        selectedGems = {};
+        selectedRewardGems = {};
+        selectedVendorGems = {};
         saveGems();
         renderBody();
         updateFooterCount();
@@ -395,10 +440,12 @@
   // Expose for external reset (from app.js new league / clear all)
   window.gemsApp = {
     onExternalReset() {
-      selectedGems = {};
+      selectedRewardGems = {};
+      selectedVendorGems = {};
       selectedClass = 'witch';
       const classSelect = document.getElementById('gem-class-select');
       if (classSelect) classSelect.value = selectedClass;
+      saveGems();
       renderBody();
       updateFooterCount();
     }
