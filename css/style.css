@@ -528,7 +528,7 @@ body {
 .step-item {
   display: flex;
   align-items: flex-start;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 10px;
   padding: 7px 8px 7px 10px;
   border-radius: 4px;
@@ -541,6 +541,7 @@ body {
 }
 
 .step-item input[type="checkbox"] {
+  flex-shrink: 0;
   appearance: none;
   -webkit-appearance: none;
   width: 18px;
@@ -1108,10 +1109,20 @@ body {
   margin: 0 1px;
 }
 
-/* ─── Step Sub (layout tips) ─── */
+/* ─── Step row: checkbox | contentWrap(step, subtitle) ─── */
+.step-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35em 0;
+}
+
 .step-sub {
-  width: 100%;
-  margin: 2px 0 4px 28px;
+  flex-basis: 100%;
+  margin-left: 28px; /* align with step (checkbox 18px + li gap 10px) */
+  margin-top: 2px;
   font-size: 12.5px;
   line-height: 1.45;
   color: var(--text-gray);

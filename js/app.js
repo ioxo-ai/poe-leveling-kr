@@ -674,28 +674,31 @@
         lbl.htmlFor = stepId;
         lbl.innerHTML = parseStep(displayText);
 
-        li.appendChild(checkbox);
-        li.appendChild(lbl);
+        const contentWrap = document.createElement('div');
+        contentWrap.className = 'step-content';
+        contentWrap.appendChild(lbl);
 
-        // Render sub (layout tip) if present
         if (sub || video) {
-          const subDiv = document.createElement('div');
-          subDiv.className = 'step-sub';
-          if (!showSub) subDiv.style.display = 'none';
+          const subEl = document.createElement('span');
+          subEl.className = 'step-sub';
+          if (!showSub) subEl.style.display = 'none';
           if (sub) {
-            subDiv.innerHTML = sub;
+            subEl.innerHTML = sub;
           }
           if (video) {
-            if (sub) subDiv.appendChild(document.createTextNode(' '));
+            if (sub) subEl.appendChild(document.createTextNode(' '));
             const a = document.createElement('a');
             a.href = video;
             a.target = '_blank';
             a.rel = 'noopener';
             a.textContent = '[영상]';
-            subDiv.appendChild(a);
+            subEl.appendChild(a);
           }
-          li.appendChild(subDiv);
+          contentWrap.appendChild(subEl);
         }
+
+        li.appendChild(checkbox);
+        li.appendChild(contentWrap);
 
         ul.appendChild(li);
         renderGemSteps(li, ul, sectionId, idx);
