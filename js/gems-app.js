@@ -139,10 +139,11 @@
       rightSide.style.alignItems = 'center';
       rightSide.style.gap = '8px';
 
+      const maxSelect = activeTab === 'quest' ? (group.maxSelect ?? 1) : null;
       const countSpan = document.createElement('span');
       countSpan.className = 'gem-quest-count';
       if (activeTab === 'quest') {
-        countSpan.textContent = `${selectedInGroup}/1`;
+        countSpan.textContent = `${selectedInGroup}/${maxSelect}`;
       } else {
         countSpan.textContent = `${selectedInGroup}개 선택`;
       }
@@ -219,7 +220,7 @@
         }
 
         card.addEventListener('click', () => {
-          onGemClick(gem.id, qKey, filteredRewards);
+          onGemClick(gem.id, qKey, filteredRewards, activeTab === 'quest' ? (group.maxSelect ?? 1) : null);
         });
 
         card.addEventListener('mouseenter', (e) => {
@@ -247,16 +248,21 @@
     }
   }
 
-  function onGemClick(gemId, qKey, groupRewards) {
+  function onGemClick(gemId, qKey, groupRewards, maxSelect) {
     const selected = getSelectedGemsForTab();
     if (activeTab === 'quest') {
-      // Quest tab: max 1 per group
+      const max = maxSelect ?? 1;
+      const selectedInGroup = groupRewards.filter(r => selected[r.gemId]).length;
       if (selected[gemId]) {
         delete selected[gemId];
+      } else if (selectedInGroup >= max) {
+        // At limit: replace or do nothing; we replace oldest by clearing one then adding (simple: clear all in group then add this one when max 1, else allow add up to max)
+        if (max === 1) {
+          groupRewards.forEach(r => { delete selected[r.gemId]; });
+          selected[gemId] = true;
+        }
+        // else max > 1 and at limit: do nothing (cannot add)
       } else {
-        groupRewards.forEach(r => {
-          delete selected[r.gemId];
-        });
         selected[gemId] = true;
       }
     } else {
