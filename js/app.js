@@ -1,6 +1,7 @@
 (() => {
   const STORAGE_KEY = 'poe-leveling-kr-checks';
-  const GEM_STORAGE_KEY = 'poe-leveling-kr-gems';
+  const GEM_REWARD_STORAGE_KEY = 'poe-leveling-kr-gems-reward';
+  const GEM_VENDOR_STORAGE_KEY = 'poe-leveling-kr-gems-vendor';
   const GEM_CLASS_KEY = 'poe-leveling-kr-gem-class';
   const NEW_LEAGUE_KEY = 'poe-leveling-kr-new-league';
   const ENGLISH_KEY = 'poe-leveling-kr-english';
@@ -139,13 +140,16 @@
 
   function getSelectedGems() {
     try {
-      return JSON.parse(localStorage.getItem(GEM_STORAGE_KEY)) || {};
-    } catch { return {}; }
+      const reward = JSON.parse(localStorage.getItem(GEM_REWARD_STORAGE_KEY)) || {};
+      const vendor = JSON.parse(localStorage.getItem(GEM_VENDOR_STORAGE_KEY)) || {};
+      return { reward, vendor };
+    } catch { return { reward: {}, vendor: {} }; }
   }
 
   function getGemsForStep(sectionId, stepIdx) {
     const selected = getSelectedGems();
-    if (Object.keys(selected).length === 0) return [];
+    const hasAny = Object.keys(selected.reward).length > 0 || Object.keys(selected.vendor).length > 0;
+    if (!hasAny) return [];
     if (typeof GEM_DATA === 'undefined') return [];
 
     const gemClass = localStorage.getItem(GEM_CLASS_KEY) || 'witch';
@@ -158,7 +162,7 @@
       const mapping = QUEST_STEP_MAP[key];
       if (!mapping || mapping.section !== sectionId || mapping.step !== stepIdx) return;
       group.rewards.forEach(r => {
-        if (!selected[r.gemId] || seenQuest.has(r.gemId)) return;
+        if (!selected.reward[r.gemId] || seenQuest.has(r.gemId)) return;
         if (r.classes && r.classes.length > 0 && !r.classes.includes(gemClass)) return;
         const gem = GEM_DATA.gems.find(g => g.id === r.gemId);
         if (gem) {
@@ -174,7 +178,7 @@
       const mapping = QUEST_STEP_MAP[key];
       if (!mapping || mapping.section !== sectionId || mapping.step !== stepIdx) return;
       group.rewards.forEach(r => {
-        if (!selected[r.gemId]) return;
+        if (!selected.vendor[r.gemId]) return;
         if (r.classes && r.classes.length > 0 && !r.classes.includes(gemClass)) return;
         const gem = GEM_DATA.gems.find(g => g.id === r.gemId);
         if (gem) {
@@ -235,7 +239,7 @@
 
       if (gem.icon) {
         const img = document.createElement('img');
-        img.src = `https://cdn.poedb.tw/image/${gem.icon}`;
+        img.src = `img/gems/${gem.icon}`;
         img.width = 18;
         img.height = 18;
         img.alt = '';
@@ -306,7 +310,7 @@
           const { gem } = info;
           if (gem.icon) {
             const img = document.createElement('img');
-            img.src = `https://cdn.poedb.tw/image/${gem.icon}`;
+            img.src = `img/gems/${gem.icon}`;
             img.width = 18;
             img.height = 18;
             img.alt = '';
@@ -796,7 +800,8 @@
     if (!confirm('모든 체크를 초기화하시겠습니까?')) return;
     checks = {};
     saveChecks();
-    localStorage.removeItem(GEM_STORAGE_KEY);
+    localStorage.removeItem(GEM_REWARD_STORAGE_KEY);
+    localStorage.removeItem(GEM_VENDOR_STORAGE_KEY);
     localStorage.removeItem(GEM_CLASS_KEY);
     render();
     if (window.gemsApp && window.gemsApp.onExternalReset) {

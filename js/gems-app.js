@@ -48,6 +48,7 @@
   function saveGems() {
     localStorage.setItem(REWARD_STORAGE_KEY, JSON.stringify(selectedRewardGems));
     localStorage.setItem(VENDOR_STORAGE_KEY, JSON.stringify(selectedVendorGems));
+    console.log('[gems-app] saveGems: reward keys=', Object.keys(selectedRewardGems).length, 'vendor keys=', Object.keys(selectedVendorGems).length);
     window.dispatchEvent(new CustomEvent('gems-changed'));
   }
 
@@ -178,7 +179,7 @@
         if (gem.icon) {
           const img = document.createElement('img');
           img.className = 'gem-icon';
-          img.src = `https://cdn.poedb.tw/image/${gem.icon}`;
+          img.src = `img/gems/${gem.icon}`;
           img.alt = gem.name;
           img.width = 24;
           img.height = 24;
@@ -288,7 +289,7 @@
     const attrEl = document.getElementById('gem-tooltip-attr');
 
     if (gem.icon) {
-      iconEl.src = `https://cdn.poedb.tw/image/${gem.icon}`;
+      iconEl.src = `img/gems/${gem.icon}`;
       iconEl.style.display = '';
     } else {
       iconEl.style.display = 'none';
