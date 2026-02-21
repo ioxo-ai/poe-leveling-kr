@@ -161,10 +161,10 @@
       const key = `${group.act}-${group.questName}`;
       const mapping = QUEST_STEP_MAP[key];
       if (!mapping || mapping.section !== sectionId || mapping.step !== stepIdx) return;
-      group.rewards.forEach(r => {
-        if (!selected.reward[r.gemId] || seenQuest.has(r.gemId)) return;
-        if (r.classes && r.classes.length > 0 && !r.classes.includes(gemClass)) return;
-        const gem = GEM_DATA.gems.find(g => g.id === r.gemId);
+      const classGems = group.rewards[gemClass] || [];
+      classGems.forEach(gemId => {
+        if (!selected.reward[gemId] || seenQuest.has(gemId)) return;
+        const gem = GEM_DATA.gems.find(g => g.id === gemId);
         if (gem) {
           seenQuest.add(gem.id);
           results.push({ gem, sourceType: 'quest', questName: group.questName });

@@ -101,7 +101,11 @@
     if (!rewards) return;
 
     rewards.forEach(group => {
-      const filteredRewards = group.rewards.filter(r => {
+      // questRewards uses per-class format {marauder: [...], ...}, vendorRewards uses [{gemId, classes}]
+      const rewardsList = Array.isArray(group.rewards)
+        ? group.rewards
+        : (group.rewards[selectedClass] || []).map(gemId => ({ gemId, classes: [selectedClass] }));
+      const filteredRewards = rewardsList.filter(r => {
         const gem = getGemById(r.gemId);
         if (!gem) return false;
         if (!matchesClass(r.classes)) return false;
