@@ -781,7 +781,7 @@ const GEM_DATA = {
     ]},
   ],
   vendorRewards: [
-    { act: 1, questName: "눈 앞의 적", npc: "네사", rewards: [
+    { act: 1, questName: "눈 앞의 적", npc: "네사", cost: "wisdom", rewards: [
       { gemId: "arcane_surge_support", classes: ["witch"] },
       { gemId: "blight", classes: ["scion", "shadow", "templar", "witch"] },
       { gemId: "burning_arrow", classes: ["duelist", "ranger", "scion", "shadow"] },
@@ -821,7 +821,7 @@ const GEM_DATA = {
       { gemId: "stormblast_mine", classes: ["scion", "shadow", "templar", "witch"] },
       { gemId: "viper_strike", classes: ["duelist", "ranger", "scion", "shadow"] },
     ]},
-    { act: 1, questName: "자비로운 임무", npc: "네사", rewards: [
+    { act: 1, questName: "자비로운 임무", npc: "네사", cost: "wisdom", rewards: [
       { gemId: "ancestral_call_support", classes: ["duelist", "marauder", "ranger", "scion", "templar"] },
       { gemId: "arcane_surge_support", classes: ["scion", "shadow", "templar", "witch"] },
       { gemId: "chance_to_bleed_support", classes: ["marauder", "ranger", "scion", "templar"] },
@@ -837,7 +837,7 @@ const GEM_DATA = {
       { gemId: "swift_assembly_support", classes: ["duelist", "ranger", "scion", "shadow", "witch"] },
       { gemId: "volley_support", classes: ["duelist", "marauder", "ranger", "scion", "shadow", "witch"] },
     ]},
-    { act: 1, questName: "로아 알 깨트리기", npc: "네사", rewards: [
+    { act: 1, questName: "로아 알 깨트리기", npc: "네사", cost: "wisdom", rewards: [
       { gemId: "animate_weapon", classes: ["scion", "shadow", "witch"] },
       { gemId: "bear_trap", classes: ["marauder", "ranger", "scion", "shadow"] },
       { gemId: "blood_and_sand", classes: ["duelist", "marauder", "ranger", "scion"] },
@@ -866,7 +866,7 @@ const GEM_DATA = {
       { gemId: "swordstorm", classes: ["duelist", "marauder", "templar"] },
       { gemId: "vigilant_strike", classes: ["duelist", "marauder", "ranger", "scion", "templar"] },
     ]},
-    { act: 1, questName: "감금된 덩치", npc: "네사", rewards: [
+    { act: 1, questName: "감금된 덩치", npc: "네사", cost: "transmutation", rewards: [
       { gemId: "added_cold_damage_support", classes: ["ranger", "scion", "shadow", "witch"] },
       { gemId: "added_fire_damage_support", classes: ["duelist", "marauder", "ranger", "scion", "shadow", "templar"] },
       { gemId: "added_lightning_damage_support", classes: ["scion", "shadow", "templar", "witch"] },
@@ -916,7 +916,7 @@ const GEM_DATA = {
       { gemId: "vitality", classes: ["duelist", "marauder", "ranger", "scion", "shadow", "templar", "witch"] },
       { gemId: "void_manipulation_support", classes: ["ranger", "scion", "shadow", "templar", "witch"] },
     ]},
-    { act: 1, questName: "사이렌의 마침곡", npc: "네사", rewards: [
+    { act: 1, questName: "사이렌의 마침곡", npc: "네사", cost: "transmutation", rewards: [
       { gemId: "absolution", classes: ["marauder", "scion", "templar", "witch"] },
       { gemId: "arc", classes: ["shadow", "templar", "witch"] },
       { gemId: "barrage", classes: ["duelist", "ranger", "scion", "shadow"] },
@@ -964,7 +964,7 @@ const GEM_DATA = {
       { gemId: "toxic_rain", classes: ["duelist", "ranger", "scion", "shadow"] },
       { gemId: "venom_gyre", classes: ["ranger", "scion", "shadow"] },
     ]},
-    { act: 2, questName: "검은 침략자", npc: "예나", rewards: [
+    { act: 2, questName: "검은 침략자", npc: "예나", cost: "alteration", rewards: [
       { gemId: "ancestral_cry", classes: ["duelist", "marauder"] },
       { gemId: "arcane_cloak", classes: ["shadow", "templar", "witch"] },
       { gemId: "arctic_armour", classes: ["ranger", "scion", "shadow", "witch"] },
@@ -996,7 +996,7 @@ const GEM_DATA = {
       { gemId: "summon_skitterbots", classes: ["shadow"] },
       { gemId: "swordstorm", classes: ["duelist", "marauder", "scion"] },
     ]},
-    { act: 2, questName: "예리하고 잔인한", npc: "예나", rewards: [
+    { act: 2, questName: "예리하고 잔인한", npc: "예나", cost: "alteration", rewards: [
       { gemId: "bloodlust_support", classes: ["duelist", "marauder", "ranger", "scion", "shadow", "templar"] },
       { gemId: "close_combat_support", classes: ["duelist", "marauder", "ranger", "scion", "shadow", "templar"] },
       { gemId: "cold_to_fire_support", classes: ["scion", "shadow", "templar", "witch"] },
@@ -1033,7 +1033,7 @@ const GEM_DATA = {
       { gemId: "vicious_projectiles_support", classes: ["duelist", "marauder", "ranger", "scion"] },
       { gemId: "volatility_support", classes: ["duelist", "marauder", "scion", "templar"] },
     ]},
-    { act: 2, questName: "문제의 근원", npc: "예나", rewards: [
+    { act: 2, questName: "문제의 근원", npc: "예나", cost: "alteration", rewards: [
       { gemId: "ancestral_cry", classes: ["duelist", "marauder", "scion", "templar"] },
       { gemId: "arcane_cloak", classes: ["scion", "shadow", "templar", "witch"] },
       { gemId: "arctic_armour", classes: ["duelist", "ranger", "scion", "shadow", "templar", "witch"] },
@@ -1059,7 +1059,7 @@ const GEM_DATA = {
       { gemId: "summon_skitterbots", classes: ["ranger", "scion", "shadow", "witch"] },
       { gemId: "tempest_shield", classes: ["duelist", "marauder", "scion", "shadow", "templar", "witch"] },
     ]},
-    { act: 3, questName: "떠나보낸 연인", npc: "클라리사", rewards: [
+    { act: 3, questName: "떠나보낸 연인", npc: "클라리사", cost: "alteration", rewards: [
       { gemId: "alchemists_mark", classes: ["ranger", "scion", "shadow"] },
       { gemId: "anger", classes: ["duelist", "marauder", "ranger", "scion", "templar"] },
       { gemId: "assassins_mark", classes: ["duelist", "ranger", "scion", "shadow"] },
@@ -1099,7 +1099,7 @@ const GEM_DATA = {
       { gemId: "temporal_chains", classes: ["ranger", "scion", "shadow", "witch"] },
       { gemId: "vengeful_cry", classes: ["duelist", "marauder", "scion"] },
     ]},
-    { act: 3, questName: "오른팔 잘라내기", npc: "클라리사", rewards: [
+    { act: 3, questName: "오른팔 잘라내기", npc: "클라리사", cost: "chance", rewards: [
       { gemId: "animate_guardian", classes: ["duelist", "marauder", "ranger", "scion", "shadow", "templar", "witch"] },
       { gemId: "armageddon_brand", classes: ["scion", "templar", "witch"] },
       { gemId: "artillery_ballista", classes: ["duelist", "marauder", "ranger", "scion", "shadow"] },
@@ -1154,7 +1154,7 @@ const GEM_DATA = {
       { gemId: "tempest_shield", classes: ["templar", "witch"] },
       { gemId: "tornado_shot", classes: ["duelist", "ranger", "scion", "shadow"] },
     ]},
-    { act: 3, questName: "운명의 흔적", npc: "시오사", rewards: [
+    { act: 3, questName: "운명의 흔적", npc: "시오사", cost: "chance", rewards: [
       { gemId: "archmage_support", classes: ["scion", "shadow", "templar", "witch"] },
       { gemId: "arrogance_support", classes: ["duelist", "marauder", "scion", "templar"] },
       { gemId: "blasphemy_support", classes: ["duelist", "marauder", "ranger", "scion", "shadow", "templar", "witch"] },
@@ -1196,7 +1196,7 @@ const GEM_DATA = {
       { gemId: "swiftbrand_support", classes: ["scion", "shadow", "templar"] },
       { gemId: "urgent_orders_support", classes: ["duelist", "marauder", "scion", "templar"] },
     ]},
-    { act: 4, questName: "영원한 악몽", npc: "페타루스와 바냐", rewards: [
+    { act: 4, questName: "영원한 악몽", npc: "페타루스와 바냐", cost: "alchemy", rewards: [
       { gemId: "arcanist_brand", classes: ["scion", "shadow", "templar"] },
       { gemId: "barrage_support", classes: ["duelist", "marauder", "ranger", "scion", "shadow", "templar", "witch"] },
       { gemId: "behead_support", classes: ["duelist", "marauder", "scion", "templar"] },
@@ -1235,7 +1235,7 @@ const GEM_DATA = {
       { gemId: "vile_toxins_support", classes: ["ranger", "scion", "shadow"] },
       { gemId: "withering_touch_support", classes: ["duelist", "ranger", "scion", "shadow"] },
     ]},
-    { act: 4, questName: "봉인 해제", npc: "페타루스와 바냐", rewards: [
+    { act: 4, questName: "봉인 해제", npc: "페타루스와 바냐", cost: "chance", rewards: [
       { gemId: "ambush", classes: ["duelist", "ranger", "scion", "shadow"] },
       { gemId: "berserk", classes: ["duelist", "marauder", "scion", "templar"] },
       { gemId: "destructive_link", classes: ["scion", "shadow", "witch"] },

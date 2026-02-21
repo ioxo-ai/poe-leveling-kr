@@ -3,24 +3,108 @@
   const GEM_STORAGE_KEY = 'poe-leveling-kr-gems';
   const GEM_CLASS_KEY = 'poe-leveling-kr-gem-class';
   const NEW_LEAGUE_KEY = 'poe-leveling-kr-new-league';
+  const ENGLISH_KEY = 'poe-leveling-kr-english';
+  const SUB_KEY = 'poe-leveling-kr-sub';
 
   // Inline markup entity classes
   const ENTITY_CLASS = {
-    zone: 'zone', boss: 'boss', npc: 'npc',
+    izone: 'zone izone', zone: 'zone', boss: 'boss', npc: 'npc',
     wp: 'waypoint', tp: 'tp', quest: 'quest', trial: 'trial'
   };
 
+  // Inline tag icons
+  const WP_ICON = '<svg class="wp-icon" width="12" height="12" viewBox="0 0 12 12"><path d="M6 1L11 6L6 11L1 6Z" fill="currentColor" opacity="0.85"/><circle cx="6" cy="6" r="1.5" fill="#fff" opacity="0.5"/></svg>';
+  const TP_ICON = '<img class="tp-icon" src="https://cdn.poedb.tw/image/Art/2DItems/Currency/CurrencyPortal.webp" width="14" height="14" alt="" loading="lazy">';
+
+  const COST_INFO = {
+    wisdom:        { name: '지혜의 두루마리', en: 'Scroll of Wisdom',       icon: 'Art/2DItems/Currency/CurrencyIdentification.webp' },
+    transmutation: { name: '변환의 오브',     en: 'Orb of Transmutation',   icon: 'Art/2DItems/Currency/CurrencyUpgradeToMagic.webp' },
+    alteration:    { name: '변경의 오브',     en: 'Orb of Alteration',      icon: 'Art/2DItems/Currency/CurrencyRerollMagic.webp' },
+    chance:        { name: '기회의 오브',     en: 'Orb of Chance',          icon: 'Art/2DItems/Currency/CurrencyUpgradeRandomly.webp' },
+    alchemy:       { name: '연금술의 오브',   en: 'Orb of Alchemy',         icon: 'Art/2DItems/Currency/CurrencyUpgradeToRare.webp' },
+  };
+
+  // ─── Main Page Gem Tooltip (poedb style) ───
+  const ATTR_LABEL = { str: '힘', dex: '민첩', int: '지능' };
+  let mainTooltip = null;
+
+  function gemIdToEnglish(id) {
+    return id.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  function getMainTooltip() {
+    if (mainTooltip) return mainTooltip;
+    const el = document.createElement('div');
+    el.className = 'mgt';
+    el.innerHTML =
+      '<div class="mgt-header"><span class="mgt-name"></span></div>' +
+      '<div class="mgt-body">' +
+        '<div class="mgt-tags"></div>' +
+        '<div class="mgt-sep"></div>' +
+        '<div class="mgt-req"></div>' +
+        '<div class="mgt-sep"></div>' +
+        '<div class="mgt-eng"></div>' +
+      '</div>';
+    document.body.appendChild(el);
+    window.addEventListener('scroll', hideMainTooltip, { passive: true });
+    mainTooltip = el;
+    return el;
+  }
+
+  function showMainTooltip(gem, e) {
+    const tt = getMainTooltip();
+    tt.querySelector('.mgt-name').textContent = gem.name;
+    tt.querySelector('.mgt-tags').textContent = gem.type === 'support' ? '보조 젬' : '스킬 젬';
+    const req = tt.querySelector('.mgt-req');
+    const attrName = ATTR_LABEL[gem.color] || '';
+    req.innerHTML = `요구 속성 <span class="mgt-attr ${gem.color}">${attrName}</span>`;
+    tt.querySelector('.mgt-eng').textContent = gemIdToEnglish(gem.id);
+    tt.style.display = 'block';
+    positionMainTooltip(e);
+  }
+
+  function hideMainTooltip() {
+    if (mainTooltip) mainTooltip.style.display = 'none';
+  }
+
+  function positionMainTooltip(e) {
+    if (!mainTooltip || mainTooltip.style.display === 'none') return;
+    const offset = 12;
+    let x = e.clientX + offset;
+    let y = e.clientY + offset;
+    const rect = mainTooltip.getBoundingClientRect();
+    const w = rect.width || 200;
+    const h = rect.height || 80;
+    if (x + w > window.innerWidth - 8) x = e.clientX - w - offset;
+    if (y + h > window.innerHeight - 8) y = e.clientY - h - offset;
+    mainTooltip.style.left = x + 'px';
+    mainTooltip.style.top = y + 'px';
+  }
+
+  function attachGemTooltip(el, gem) {
+    el.addEventListener('mouseenter', e => showMainTooltip(gem, e));
+    el.addEventListener('mouseleave', hideMainTooltip);
+    el.addEventListener('mousemove', positionMainTooltip);
+  }
+
   function parseStep(text) {
     let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    return html.replace(/@(zone|boss|npc|wp|tp|quest|trial)\{([^}]+)\}/g, (_, type, content) => {
-      return `<span class="${ENTITY_CLASS[type]}">${content}</span>`;
+    return html.replace(/@(izone|zone|boss|npc|wp|tp|quest|trial)\{([^}]+)\}/g, (_, type, content) => {
+      const prefix = type === 'wp' ? WP_ICON : type === 'tp' ? TP_ICON : '';
+      const eng = showEnglish[type] ? getEnglishName(type, content) : '';
+      const engSuffix = eng ? `<span class="eng-anno">${eng}</span>` : '';
+      return `<span class="${ENTITY_CLASS[type]}">${prefix}${content}${engSuffix}</span>`;
     });
   }
 
-  // Normalize step: returns { text, isNewLeague }
+  // Normalize step: returns { text, isNewLeague, variantText, sub, video }
   function normalizeStep(step) {
-    if (typeof step === 'string') return { text: step, isNewLeague: false };
-    return { text: step.text, isNewLeague: !!step.newLeague };
+    if (typeof step === 'string') return { text: step, isNewLeague: false, variantText: null, sub: null, video: null };
+    const sub = step.sub || null;
+    const video = step.video || null;
+    if (typeof step.newLeague === 'string')
+      return { text: step.text, isNewLeague: false, variantText: step.newLeague, sub, video };
+    return { text: step.text, isNewLeague: !!step.newLeague, variantText: null, sub, video };
   }
 
   // Quest-to-step mapping for gem badge placement
@@ -40,7 +124,7 @@
     // Act 2: step 14=support gem reward
     "2-예리하고 잔인한": { section: "act2", step: 14 },
     // Act 2: step 20=act1 passive point
-    "2-문제의 근원": { section: "act2", step: 23 },
+    "2-문제의 근원": { section: "act2", step: 22 },
     // Act 3: step 4=piety kill, 5=rewards
     "3-떠나보낸 연인": { section: "act3", step: 5 },
     // Act 3: step 21=piety kill act3
@@ -84,19 +168,17 @@
       });
     });
 
-    // Vendor rewards (buy from NPC) — dedupe within source, independent from quest
-    const seenVendor = new Set();
+    // Vendor rewards (buy from NPC) — dedupe within each quest group
     (GEM_DATA.vendorRewards || []).forEach(group => {
       const key = `${group.act}-${group.questName}`;
       const mapping = QUEST_STEP_MAP[key];
       if (!mapping || mapping.section !== sectionId || mapping.step !== stepIdx) return;
       group.rewards.forEach(r => {
-        if (!selected[r.gemId] || seenVendor.has(r.gemId)) return;
+        if (!selected[r.gemId]) return;
         if (r.classes && r.classes.length > 0 && !r.classes.includes(gemClass)) return;
         const gem = GEM_DATA.gems.find(g => g.id === r.gemId);
         if (gem) {
-          seenVendor.add(gem.id);
-          results.push({ gem, sourceType: 'vendor', questName: group.questName, npc: group.npc });
+          results.push({ gem, sourceType: 'vendor', questName: group.questName, npc: group.npc, cost: group.cost });
         }
       });
     });
@@ -108,10 +190,14 @@
     const gemInfos = getGemsForStep(sectionId, stepIdx);
     if (gemInfos.length === 0) return;
 
+    const questGems = gemInfos.filter(i => i.sourceType === 'quest');
+    const vendorGems = gemInfos.filter(i => i.sourceType === 'vendor');
     let insertAfter = li;
-    gemInfos.forEach(info => {
-      const { gem, sourceType, questName, npc } = info;
-      const gemStepId = `${sectionId}-gem-${gem.id}-${sourceType}-${stepIdx}`;
+
+    // Quest gems: render individually
+    questGems.forEach(info => {
+      const { gem, questName } = info;
+      const gemStepId = `${sectionId}-gem-${gem.id}-quest-${stepIdx}`;
       const isChecked = !!checks[gemStepId];
 
       const gemLi = document.createElement('li');
@@ -125,11 +211,27 @@
       checkbox.addEventListener('change', () => {
         checks[gemStepId] = checkbox.checked;
         gemLi.classList.toggle('checked', checkbox.checked);
+        if (checkbox.checked && shiftHeld) checkAllBefore(ul, gemLi);
+        clearCheckPreview();
         saveChecks();
+        updateProgress(sectionId);
       });
+      attachCheckPreview(checkbox, ul, gemLi);
 
       const lbl = document.createElement('label');
       lbl.htmlFor = gemStepId;
+
+      lbl.appendChild(document.createTextNode(questName));
+      if (showEnglish.questName) {
+        const engQN = getEnglishName('questName', questName);
+        if (engQN) {
+          const engSpan = document.createElement('span');
+          engSpan.className = 'eng-anno';
+          engSpan.textContent = engQN;
+          lbl.appendChild(engSpan);
+        }
+      }
+      lbl.appendChild(document.createTextNode(' 보상으로 '));
 
       if (gem.icon) {
         const img = document.createElement('img');
@@ -140,27 +242,123 @@
         img.loading = 'lazy';
         img.className = 'gem-step-icon';
         lbl.appendChild(img);
+        attachGemTooltip(img, gem);
       }
 
       const nameSpan = document.createElement('span');
       nameSpan.className = `gem-name-text ${gem.color}`;
       nameSpan.textContent = gem.name;
-
-      if (sourceType === 'quest') {
-        lbl.appendChild(document.createTextNode(`${questName} 보상으로 `));
-        lbl.appendChild(nameSpan);
-        lbl.appendChild(document.createTextNode(' 선택'));
-      } else {
-        lbl.appendChild(document.createTextNode(`${npc}에게서 `));
-        lbl.appendChild(nameSpan);
-        lbl.appendChild(document.createTextNode(' 구매'));
+      if (showEnglish.gem) {
+        const eng = document.createElement('span');
+        eng.className = 'eng-anno';
+        eng.textContent = gemEngName(gem.id);
+        nameSpan.appendChild(eng);
       }
+      attachGemTooltip(nameSpan, gem);
+
+      lbl.appendChild(nameSpan);
+      lbl.appendChild(document.createTextNode(' 선택'));
 
       gemLi.appendChild(checkbox);
       gemLi.appendChild(lbl);
       insertAfter.after(gemLi);
       insertAfter = gemLi;
     });
+
+    // Vendor gems: group by quest into separate steps
+    if (vendorGems.length > 0) {
+      const byQuest = new Map();
+      vendorGems.forEach(info => {
+        const key = info.questName || '상인';
+        if (!byQuest.has(key)) byQuest.set(key, []);
+        byQuest.get(key).push(info);
+      });
+
+      byQuest.forEach((gems, questName) => {
+        const questKey = questName.replace(/\s+/g, '_');
+        const gemStepId = `${sectionId}-vendor-${questKey}-${stepIdx}`;
+        const isChecked = !!checks[gemStepId];
+        const npc = gems[0].npc || '상인';
+
+        const gemLi = document.createElement('li');
+        gemLi.className = 'step-item gem-step' + (isChecked ? ' checked' : '');
+        gemLi.dataset.parentStep = `${sectionId}-${stepIdx}`;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = gemStepId;
+        checkbox.checked = isChecked;
+        checkbox.addEventListener('change', () => {
+          checks[gemStepId] = checkbox.checked;
+          gemLi.classList.toggle('checked', checkbox.checked);
+          if (checkbox.checked && shiftHeld) checkAllBefore(ul, gemLi);
+          clearCheckPreview();
+          saveChecks();
+          updateProgress(sectionId);
+        });
+        attachCheckPreview(checkbox, ul, gemLi);
+
+        const lbl = document.createElement('label');
+        lbl.htmlFor = gemStepId;
+        lbl.appendChild(document.createTextNode(`${npc}에게서 `));
+
+        gems.forEach((info, idx) => {
+          const { gem } = info;
+          if (gem.icon) {
+            const img = document.createElement('img');
+            img.src = `https://cdn.poedb.tw/image/${gem.icon}`;
+            img.width = 18;
+            img.height = 18;
+            img.alt = '';
+            img.loading = 'lazy';
+            img.className = 'gem-step-icon';
+            lbl.appendChild(img);
+            attachGemTooltip(img, gem);
+          }
+
+          const nameSpan = document.createElement('span');
+          nameSpan.className = `gem-name-text ${gem.color}`;
+          nameSpan.textContent = gem.name;
+          if (showEnglish.gem) {
+            const eng = document.createElement('span');
+            eng.className = 'eng-anno';
+            eng.textContent = gemEngName(gem.id);
+            nameSpan.appendChild(eng);
+          }
+          attachGemTooltip(nameSpan, gem);
+          lbl.appendChild(nameSpan);
+
+          if (info.cost && COST_INFO[info.cost]) {
+            const ci = COST_INFO[info.cost];
+            const costSpan = document.createElement('span');
+            costSpan.className = 'gem-cost';
+            costSpan.title = showEnglish.gem ? `${ci.name} (${ci.en})` : ci.name;
+            costSpan.appendChild(document.createTextNode('(1 x '));
+            const costIcon = document.createElement('img');
+            costIcon.src = `https://cdn.poedb.tw/image/${ci.icon}`;
+            costIcon.width = 16;
+            costIcon.height = 16;
+            costIcon.alt = ci.name;
+            costIcon.loading = 'lazy';
+            costIcon.className = 'gem-cost-icon';
+            costSpan.appendChild(costIcon);
+            costSpan.appendChild(document.createTextNode(')'));
+            lbl.appendChild(costSpan);
+          }
+
+          if (idx < gems.length - 1) {
+            lbl.appendChild(document.createTextNode(', '));
+          }
+        });
+
+        lbl.appendChild(document.createTextNode(' 구매'));
+
+        gemLi.appendChild(checkbox);
+        gemLi.appendChild(lbl);
+        insertAfter.after(gemLi);
+        insertAfter = gemLi;
+      });
+    }
   }
 
   function updateAllGemSteps() {
@@ -180,10 +378,23 @@
     });
   }
 
+  const DEFAULT_ENG = { zone: true, boss: true, npc: true, quest: true, trial: true, gem: true, questName: true };
+  const ENG_ENTITIES = [
+    { key: 'zone', label: '지역' },
+    { key: 'boss', label: '보스' },
+    { key: 'npc', label: 'NPC' },
+    { key: 'questName', label: '퀘스트' },
+    { key: 'quest', label: '퀘스트 아이템' },
+    { key: 'trial', label: '시험' },
+    { key: 'gem', label: '젬' },
+  ];
+
   // State
   let checks = loadChecks();
   let tipsVisible = true;
   let newLeague = loadNewLeague();
+  let showEnglish = loadEnglish();
+  let showSub = loadSub();
 
   function loadChecks() {
     try {
@@ -206,8 +417,93 @@
     localStorage.setItem(NEW_LEAGUE_KEY, String(newLeague));
   }
 
+  function loadEnglish() {
+    try {
+      const raw = localStorage.getItem(ENGLISH_KEY);
+      if (raw === null) return { ...DEFAULT_ENG };
+      const val = JSON.parse(raw);
+      if (typeof val === 'object' && val !== null) return { ...DEFAULT_ENG, ...val };
+      const on = val !== false;
+      const obj = {};
+      for (const k of Object.keys(DEFAULT_ENG)) obj[k] = on;
+      return obj;
+    } catch { return { ...DEFAULT_ENG }; }
+  }
+
+  function saveEnglish() {
+    localStorage.setItem(ENGLISH_KEY, JSON.stringify(showEnglish));
+  }
+
+  function loadSub() {
+    const val = localStorage.getItem(SUB_KEY);
+    return val === null ? true : val === 'true';
+  }
+
+  function saveSub() {
+    localStorage.setItem(SUB_KEY, String(showSub));
+  }
+
   function getStepId(actId, stepIdx) {
     return `${actId}-${stepIdx}`;
+  }
+
+  // Track shift key for shift+click batch check
+  let shiftHeld = false;
+  document.addEventListener('keydown', e => { if (e.key === 'Shift') shiftHeld = true; });
+  document.addEventListener('keyup', e => { if (e.key === 'Shift') { shiftHeld = false; clearCheckPreview(); } });
+
+  // Collect all unchecked items before targetLi across all sections
+  function getItemsBefore(ul, targetLi) {
+    const result = [];
+    const allLists = document.querySelectorAll('.steps-list');
+    for (const list of allLists) {
+      const items = list.querySelectorAll('.step-item');
+      for (const item of items) {
+        if (list === ul && item === targetLi) return result;
+        const cb = item.querySelector('input[type="checkbox"]');
+        if (cb && !cb.checked) result.push(item);
+      }
+    }
+    return result;
+  }
+
+  // Hover preview: show/clear check-preview class
+  function showCheckPreview(ul, targetLi) {
+    const items = getItemsBefore(ul, targetLi);
+    items.forEach(item => item.classList.add('check-preview'));
+  }
+
+  function clearCheckPreview() {
+    document.querySelectorAll('.check-preview').forEach(el => el.classList.remove('check-preview'));
+  }
+
+  function attachCheckPreview(checkbox, ul, li) {
+    checkbox.addEventListener('mouseenter', () => {
+      if (!checkbox.checked && shiftHeld) showCheckPreview(ul, li);
+    });
+    checkbox.addEventListener('mouseleave', clearCheckPreview);
+  }
+
+  // When a step is checked, also check all previous steps across all sections
+  function checkAllBefore(ul, targetLi) {
+    const allLists = document.querySelectorAll('.steps-list');
+    for (const list of allLists) {
+      const items = list.querySelectorAll('.step-item');
+      for (const item of items) {
+        if (list === ul && item === targetLi) return;
+        const cb = item.querySelector('input[type="checkbox"]');
+        if (cb && !cb.checked) {
+          cb.checked = true;
+          item.classList.add('checked');
+          checks[cb.id] = true;
+        }
+      }
+      // Update progress for completed previous sections
+      if (list !== ul) {
+        const sectionEl = list.closest('.act-section');
+        if (sectionEl) updateProgress(sectionEl.id);
+      }
+    }
   }
 
   // SVG progress ring helper
@@ -342,17 +638,19 @@
       ul.className = 'steps-list';
 
       steps.forEach((step, idx) => {
-        const { text, isNewLeague } = normalizeStep(step);
+        const { text, isNewLeague, variantText, sub, video } = normalizeStep(step);
 
         // Skip new-league-only steps when toggle is off
         if (isNewLeague && !newLeague) return;
 
+        const displayText = (variantText && newLeague) ? variantText : text;
         const stepId = getStepId(sectionId, idx);
         const isChecked = !!checks[stepId];
 
         const li = document.createElement('li');
         li.className = 'step-item' + (isChecked ? ' checked' : '');
         if (isNewLeague) li.classList.add('new-league-step');
+        if (variantText && newLeague) li.classList.add('variant-step');
 
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
@@ -361,16 +659,40 @@
         checkbox.addEventListener('change', () => {
           checks[stepId] = checkbox.checked;
           li.classList.toggle('checked', checkbox.checked);
+          if (checkbox.checked && shiftHeld) checkAllBefore(ul, li);
+          clearCheckPreview();
           saveChecks();
           updateProgress(sectionId);
         });
+        attachCheckPreview(checkbox, ul, li);
 
         const lbl = document.createElement('label');
         lbl.htmlFor = stepId;
-        lbl.innerHTML = parseStep(text);
+        lbl.innerHTML = parseStep(displayText);
 
         li.appendChild(checkbox);
         li.appendChild(lbl);
+
+        // Render sub (layout tip) if present
+        if (sub || video) {
+          const subDiv = document.createElement('div');
+          subDiv.className = 'step-sub';
+          if (!showSub) subDiv.style.display = 'none';
+          if (sub) {
+            subDiv.innerHTML = sub;
+          }
+          if (video) {
+            if (sub) subDiv.appendChild(document.createTextNode(' '));
+            const a = document.createElement('a');
+            a.href = video;
+            a.target = '_blank';
+            a.rel = 'noopener';
+            a.textContent = '[영상]';
+            subDiv.appendChild(a);
+          }
+          li.appendChild(subDiv);
+        }
+
         ul.appendChild(li);
         renderGemSteps(li, ul, sectionId, idx);
       });
@@ -469,16 +791,6 @@
     DATA.acts.forEach(act => updateProgress(`act${act.id}`));
   }
 
-  // Tips toggle
-  function toggleAllTips() {
-    tipsVisible = !tipsVisible;
-    document.querySelectorAll('.tips-container').forEach(el => {
-      el.classList.toggle('open', tipsVisible);
-    });
-    const btn = document.getElementById('btn-tips');
-    btn.textContent = tipsVisible ? '팁 숨기기' : '팁 표시';
-  }
-
   // Clear all
   function clearAll() {
     if (!confirm('모든 체크를 초기화하시겠습니까?')) return;
@@ -492,13 +804,139 @@
     }
   }
 
-  // New league toggle
-  function toggleNewLeague() {
-    const checkbox = document.getElementById('btn-new-league-toggle');
-    newLeague = checkbox.checked;
-    saveNewLeague();
-    render();
-    setupScrollSpy();
+  // Unified view settings dropdown
+  function setupViewSettings() {
+    const wrap = document.getElementById('view-settings-wrap');
+    const btn = document.getElementById('btn-view-settings');
+    const dropdown = document.getElementById('view-settings-dropdown');
+    if (!wrap || !btn || !dropdown) return;
+
+    // ── Column 1: 새 리그, 팁 ──
+    const col1 = document.createElement('div');
+    col1.className = 'view-col';
+
+    const nlLabel = document.createElement('label');
+    const nlCb = document.createElement('input');
+    nlCb.type = 'checkbox';
+    nlCb.id = 'btn-new-league-toggle';
+    nlCb.checked = newLeague;
+    nlCb.addEventListener('change', () => {
+      newLeague = nlCb.checked;
+      saveNewLeague();
+      render();
+      setupScrollSpy();
+    });
+    nlLabel.appendChild(nlCb);
+    nlLabel.appendChild(document.createTextNode(' 새 리그'));
+    col1.appendChild(nlLabel);
+
+    const tipLabel = document.createElement('label');
+    const tipCb = document.createElement('input');
+    tipCb.type = 'checkbox';
+    tipCb.id = 'btn-tips-toggle';
+    tipCb.checked = tipsVisible;
+    tipCb.addEventListener('change', () => {
+      tipsVisible = tipCb.checked;
+      document.querySelectorAll('.tips-container').forEach(el => {
+        el.classList.toggle('open', tipsVisible);
+      });
+    });
+    tipLabel.appendChild(tipCb);
+    tipLabel.appendChild(document.createTextNode(' 팁'));
+    col1.appendChild(tipLabel);
+
+    const subLabel = document.createElement('label');
+    const subCbToggle = document.createElement('input');
+    subCbToggle.type = 'checkbox';
+    subCbToggle.id = 'btn-sub-toggle';
+    subCbToggle.checked = showSub;
+    subCbToggle.addEventListener('change', () => {
+      showSub = subCbToggle.checked;
+      saveSub();
+      document.querySelectorAll('.step-sub').forEach(el => {
+        el.style.display = showSub ? '' : 'none';
+      });
+    });
+    subLabel.appendChild(subCbToggle);
+    subLabel.appendChild(document.createTextNode(' 자막'));
+    col1.appendChild(subLabel);
+
+    dropdown.appendChild(col1);
+
+    // ── Column 2: 영문 표기 master + sub-checkboxes ──
+    const col2 = document.createElement('div');
+    col2.className = 'view-col';
+
+    const masterLabel = document.createElement('label');
+    masterLabel.className = 'view-master';
+    const masterCb = document.createElement('input');
+    masterCb.type = 'checkbox';
+    masterLabel.appendChild(masterCb);
+    masterLabel.appendChild(document.createTextNode(' 영문 표기'));
+    col2.appendChild(masterLabel);
+
+    const subCbs = [];
+    ENG_ENTITIES.forEach(({ key, label }) => {
+      const lbl = document.createElement('label');
+      lbl.className = 'view-sub';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = showEnglish[key];
+      cb.dataset.eng = key;
+      cb.addEventListener('change', () => {
+        showEnglish[key] = cb.checked;
+        saveEnglish();
+        updateMaster();
+        render();
+        setupScrollSpy();
+      });
+      lbl.appendChild(cb);
+      lbl.appendChild(document.createTextNode(' ' + label));
+      col2.appendChild(lbl);
+      subCbs.push(cb);
+    });
+
+    dropdown.appendChild(col2);
+
+    // Master tri-state logic
+    function updateMaster() {
+      const total = subCbs.length;
+      const checked = subCbs.filter(c => c.checked).length;
+      if (checked === total) {
+        masterCb.checked = true;
+        masterCb.indeterminate = false;
+      } else if (checked === 0) {
+        masterCb.checked = false;
+        masterCb.indeterminate = false;
+      } else {
+        masterCb.checked = false;
+        masterCb.indeterminate = true;
+      }
+    }
+
+    masterCb.addEventListener('change', () => {
+      const on = masterCb.checked;
+      masterCb.indeterminate = false;
+      subCbs.forEach(cb => { cb.checked = on; });
+      ENG_ENTITIES.forEach(({ key }) => { showEnglish[key] = on; });
+      saveEnglish();
+      render();
+      setupScrollSpy();
+    });
+
+    updateMaster();
+
+    // Toggle dropdown
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.classList.toggle('open');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!wrap.contains(e.target)) {
+        dropdown.classList.remove('open');
+      }
+    });
   }
 
   // Scroll spy
@@ -533,21 +971,27 @@
 
   // Init
   function init() {
-    // Set initial new league toggle state
-    const nlToggle = document.getElementById('btn-new-league-toggle');
-    nlToggle.checked = newLeague;
+    setupViewSettings();
 
     render();
     setupScrollSpy();
     setupTocScroll();
 
-    document.getElementById('btn-tips').addEventListener('click', toggleAllTips);
     document.getElementById('btn-clear').addEventListener('click', clearAll);
-    nlToggle.addEventListener('change', toggleNewLeague);
 
     // React to gem selection changes
     window.addEventListener('gems-changed', updateAllGemSteps);
   }
+
+  // Expose for sync.js — check all items before target
+  window.__completeItemsBefore = function(targetLi) {
+    const ul = targetLi.closest('.steps-list');
+    if (!ul) return;
+    checkAllBefore(ul, targetLi);
+    const sectionEl = ul.closest('.act-section');
+    if (sectionEl) updateProgress(sectionEl.id);
+    saveChecks();
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
