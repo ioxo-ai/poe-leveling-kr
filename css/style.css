@@ -282,11 +282,11 @@ body {
   font-style: normal;
 }
 .btn-sync-active .sync-icon {
-  animation: syncSpin 2s linear infinite;
+  animation: syncPulse 2s ease-in-out infinite;
 }
-@keyframes syncSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+@keyframes syncPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
 .sync-help-wrap {
