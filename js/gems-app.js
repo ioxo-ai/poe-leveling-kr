@@ -5,8 +5,18 @@
   const CLASS_KEY = 'poe-leveling-kr-gem-class';
   const ENGLISH_KEY = 'poe-leveling-kr-english';
 
-  function isEnglishOn() {
-    return localStorage.getItem(ENGLISH_KEY) !== 'false';
+  function getEnglishFlags() {
+    try {
+      const raw = localStorage.getItem(ENGLISH_KEY);
+      if (!raw) return { gem: true, quest: true };
+      const val = JSON.parse(raw);
+      if (typeof val === 'object' && val !== null) return val;
+      // legacy boolean
+      const on = val !== false;
+      return { gem: on, quest: on };
+    } catch {
+      return { gem: true, quest: true };
+    }
   }
 
   // State: separate for quest rewards vs vendor purchases
@@ -97,6 +107,7 @@
 
     body.innerHTML = '';
 
+    const engFlags = getEnglishFlags();
     const rewards = activeTab === 'quest' ? GEM_DATA.questRewards : GEM_DATA.vendorRewards;
     if (!rewards) return;
 
@@ -129,7 +140,7 @@
       const titleSpan = document.createElement('span');
       titleSpan.className = 'gem-quest-title';
       const npcStr = group.npc ? ` (${group.npc})` : '';
-      const engQuest = isEnglishOn() ? getEnglishName('quest', group.questName) : '';
+      const engQuest = engFlags.quest !== false ? getEnglishName('quest', group.questName) : '';
       const engStr = engQuest ? ` ${engQuest.toUpperCase()}` : '';
       titleSpan.textContent = `${group.act}장 — ${group.questName}${engStr}${npcStr}`;
       header.appendChild(titleSpan);
@@ -204,7 +215,7 @@
         const name = document.createElement('span');
         name.className = 'gem-name';
         name.textContent = gem.name;
-        if (isEnglishOn()) {
+        if (engFlags.gem !== false) {
           const eng = document.createElement('span');
           eng.className = 'eng-anno';
           eng.textContent = gemEngName(gem.id);
@@ -308,7 +319,8 @@
       GEM_DATA.classes.forEach(cls => {
         const opt = document.createElement('option');
         opt.value = cls.id;
-        opt.textContent = isEnglishOn()
+        const clsEngOn = getEnglishFlags().gem !== false;
+        opt.textContent = clsEngOn
           ? `${cls.name} (${cls.id.charAt(0).toUpperCase() + cls.id.slice(1)})`
           : cls.name;
         classSelect.appendChild(opt);
