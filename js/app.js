@@ -106,7 +106,8 @@
       let added = 0;
       for (const gemId of classGems) {
         if (added >= maxSelect) break;
-        if (!selected.reward[gemId]) continue;
+        const sel = selected.reward[gemId];
+        if (!sel || (sel !== true && sel !== key)) continue; // true = legacy compat
         const gem = GEM_DATA.gems.find(g => g.id === gemId);
         if (gem) {
           results.push({ gem, sourceType: 'quest', questName: group.questName });

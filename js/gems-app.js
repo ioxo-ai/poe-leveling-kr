@@ -251,11 +251,11 @@
         // At limit: replace or do nothing; we replace oldest by clearing one then adding (simple: clear all in group then add this one when max 1, else allow add up to max)
         if (max === 1) {
           groupRewards.forEach(r => { delete selected[r.gemId]; });
-          selected[gemId] = true;
+          selected[gemId] = qKey;
         }
         // else max > 1 and at limit: do nothing (cannot add)
       } else {
-        selected[gemId] = true;
+        selected[gemId] = qKey;
       }
     } else {
       // Vendor tab: toggle freely
