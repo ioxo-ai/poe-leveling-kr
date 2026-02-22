@@ -970,14 +970,36 @@
     sections.forEach(section => observer.observe(section));
   }
 
-  // TOC overlay scroll visibility
+  // TOC overlay scroll visibility + top bar slim mode
   function setupTocScroll() {
     const toc = document.getElementById('toc-overlay');
+    const topBar = document.getElementById('top-bar');
+    let lastScrollY = 0;
+    let ticking = false;
+
     window.addEventListener('scroll', () => {
-      if (window.scrollY > 200) {
-        toc.classList.add('visible');
-      } else {
-        toc.classList.remove('visible');
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const currentY = window.scrollY;
+
+          // TOC visibility
+          if (currentY > 200) {
+            toc.classList.add('visible');
+          } else {
+            toc.classList.remove('visible');
+          }
+
+          // Top bar slim mode: slim when scrolled past header, restore when near top
+          if (currentY > 120 && currentY > lastScrollY) {
+            topBar.classList.add('slim');
+          } else if (currentY < lastScrollY || currentY < 80) {
+            topBar.classList.remove('slim');
+          }
+
+          lastScrollY = currentY;
+          ticking = false;
+        });
+        ticking = true;
       }
     }, { passive: true });
   }

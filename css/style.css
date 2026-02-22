@@ -56,18 +56,38 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 0 20px;
   z-index: 100;
-  background: rgba(0, 0, 0, 0.92);
-  border-bottom: 1px solid rgba(180, 158, 121, 0.15);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(13, 13, 13, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: height 0.25s ease, padding 0.25s ease, background 0.25s ease;
+}
+
+/* Slim mode: shrink when scrolling down */
+.top-bar.slim {
+  height: 34px;
+  background: rgba(13, 13, 13, 0.92);
+}
+
+.top-bar.slim .top-bar-title {
+  font-size: 12px;
+}
+
+.top-bar.slim .btn-sm {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+.top-bar.slim .top-bar-sep {
+  height: 14px;
 }
 
 .top-bar-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .top-bar-right {
@@ -77,16 +97,19 @@ body {
 
 .top-bar-title {
   font-family: var(--font-heading);
-  font-size: 15px;
-  color: var(--gold);
+  font-size: 14px;
+  color: var(--text-gray);
   letter-spacing: 1px;
+  opacity: 0.6;
+  transition: font-size 0.25s ease, opacity 0.25s ease;
 }
 
 .top-bar-sep {
   width: 1px;
-  height: 18px;
-  background: rgba(180, 158, 121, 0.2);
-  margin: 0 4px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0 2px;
+  transition: height 0.25s ease;
 }
 
 /* ─── View Settings Dropdown ─── */
@@ -99,13 +122,14 @@ body {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  background: rgba(0, 0, 0, 0.95);
-  border: 1px solid rgba(180, 158, 121, 0.3);
-  border-radius: 4px;
+  background: rgba(13, 13, 13, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
   padding: 6px;
   z-index: 200;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 .view-settings-dropdown.open {
@@ -120,7 +144,7 @@ body {
 }
 
 .view-col + .view-col {
-  border-left: 1px solid rgba(180, 158, 121, 0.15);
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .view-settings-dropdown label {
@@ -136,7 +160,7 @@ body {
 }
 
 .view-settings-dropdown label:hover {
-  background: rgba(180, 158, 121, 0.1);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .view-settings-dropdown input[type="checkbox"] {
@@ -234,8 +258,9 @@ body {
 }
 
 .btn-sync-active {
-  border-color: var(--teal) !important;
   color: var(--teal) !important;
+  background: rgba(27, 162, 155, 0.08) !important;
+  border-color: rgba(27, 162, 155, 0.2) !important;
 }
 
 .sync-highlight {
@@ -254,13 +279,14 @@ body {
 
 .sync-icon {
   display: inline-block;
+  font-style: normal;
 }
 .btn-sync-active .sync-icon {
-  animation: syncPulse 2s ease-in-out infinite;
+  animation: syncSpin 2s linear infinite;
 }
-@keyframes syncPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+@keyframes syncSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .sync-help-wrap {
@@ -295,8 +321,8 @@ body {
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.95);
-  border: 1px solid rgba(180, 158, 121, 0.25);
+  background: rgba(13, 13, 13, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 6px;
   padding: 8px 12px;
   font-size: 11px;
@@ -304,7 +330,8 @@ body {
   color: var(--text-gray);
   white-space: nowrap;
   z-index: 200;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 .sync-help-path {
@@ -327,10 +354,10 @@ body {
 .btn {
   display: inline-block;
   padding: 6px 12px;
-  border: 1px solid rgba(180, 158, 121, 0.25);
+  border: 1px solid transparent;
   border-radius: 4px;
-  background: rgba(180, 158, 121, 0.08);
-  color: var(--text-gray);
+  background: transparent;
+  color: var(--text-dim);
   font-family: var(--font-heading);
   font-size: 13px;
   cursor: pointer;
@@ -340,26 +367,29 @@ body {
 }
 
 .btn:hover {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(180, 158, 121, 0.15);
+  border-color: rgba(255, 255, 255, 0.06);
+  color: var(--text-gray);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.btn:active {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .btn-sm {
-  padding: 4px 10px;
+  padding: 3px 10px;
   font-size: 12px;
+  transition: all 0.25s ease;
 }
 
 .btn-danger {
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.25);
-  background: rgba(239, 68, 68, 0.06);
+  color: var(--text-dim);
 }
 
 .btn-danger:hover {
-  border-color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.15);
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.12);
+  background: rgba(239, 68, 68, 0.06);
 }
 
 /* ─── Main content ─── */
@@ -1143,18 +1173,26 @@ body {
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
   .top-bar {
-    padding: 0 8px;
+    padding: 0 10px;
     gap: 4px;
   }
 
+  .top-bar.slim {
+    height: 32px;
+  }
+
   .top-bar-left {
-    gap: 4px;
+    gap: 2px;
     flex-wrap: nowrap;
     overflow-x: auto;
   }
 
   .top-bar-title {
-    font-size: 13px;
+    font-size: 12px;
+  }
+
+  .top-bar.slim .top-bar-title {
+    font-size: 11px;
   }
 
   .btn {
@@ -1165,6 +1203,11 @@ body {
   .btn-sm {
     padding: 3px 6px;
     font-size: 10px;
+  }
+
+  .top-bar.slim .btn-sm {
+    padding: 2px 5px;
+    font-size: 9px;
   }
 
   .toc-overlay {
