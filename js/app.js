@@ -25,67 +25,8 @@
     alchemy:       { name: '연금술의 오브',   en: 'Orb of Alchemy',         icon: 'Art/2DItems/Currency/CurrencyUpgradeToRare.webp' },
   };
 
-  // ─── Main Page Gem Tooltip (poedb style) ───
-  const ATTR_LABEL = { str: '힘', dex: '민첩', int: '지능' };
-  let mainTooltip = null;
-
-  function gemIdToEnglish(id) {
-    return id.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  }
-
-  function getMainTooltip() {
-    if (mainTooltip) return mainTooltip;
-    const el = document.createElement('div');
-    el.className = 'mgt';
-    el.innerHTML =
-      '<div class="mgt-header"><span class="mgt-name"></span></div>' +
-      '<div class="mgt-body">' +
-        '<div class="mgt-tags"></div>' +
-        '<div class="mgt-sep"></div>' +
-        '<div class="mgt-req"></div>' +
-        '<div class="mgt-sep"></div>' +
-        '<div class="mgt-eng"></div>' +
-      '</div>';
-    document.body.appendChild(el);
-    window.addEventListener('scroll', hideMainTooltip, { passive: true });
-    mainTooltip = el;
-    return el;
-  }
-
-  function showMainTooltip(gem, e) {
-    const tt = getMainTooltip();
-    tt.querySelector('.mgt-name').textContent = gem.name;
-    tt.querySelector('.mgt-tags').textContent = gem.type === 'support' ? '보조 젬' : '스킬 젬';
-    const req = tt.querySelector('.mgt-req');
-    const attrName = ATTR_LABEL[gem.color] || '';
-    req.innerHTML = `요구 속성 <span class="mgt-attr ${gem.color}">${attrName}</span>`;
-    tt.querySelector('.mgt-eng').textContent = gemIdToEnglish(gem.id);
-    tt.style.display = 'block';
-    positionMainTooltip(e);
-  }
-
-  function hideMainTooltip() {
-    if (mainTooltip) mainTooltip.style.display = 'none';
-  }
-
-  function positionMainTooltip(e) {
-    if (!mainTooltip || mainTooltip.style.display === 'none') return;
-    const offset = 12;
-    let x = e.clientX + offset;
-    let y = e.clientY + offset;
-    const rect = mainTooltip.getBoundingClientRect();
-    const w = rect.width || 200;
-    const h = rect.height || 80;
-    if (x + w > window.innerWidth - 8) x = e.clientX - w - offset;
-    if (y + h > window.innerHeight - 8) y = e.clientY - h - offset;
-    mainTooltip.style.left = x + 'px';
-    mainTooltip.style.top = y + 'px';
-  }
-
   function attachGemTooltip(el, gem) {
-    el.addEventListener('mouseenter', e => showMainTooltip(gem, e));
-    el.addEventListener('mouseleave', hideMainTooltip);
-    el.addEventListener('mousemove', positionMainTooltip);
+    GemTooltip.attach(el, gem);
   }
 
   function parseStep(text) {

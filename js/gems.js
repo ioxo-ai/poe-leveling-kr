@@ -738,9 +738,4 @@ const GEM_DATA = {
       marauder: ["vaal_ancestral_warchief"],
     }},
   ],
-
-
-
-
-
 };

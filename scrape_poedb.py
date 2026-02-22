@@ -7,9 +7,13 @@ Updates three sections in gems.js:
   - vendorRewards: per-class format with npc/cost, page order
 
 Usage:
-    python scrape_poedb.py
+    python scrape_poedb.py            # scrape rewards, update gems.js
+    python scrape_poedb.py --icons    # also download missing gem icons
+    python scrape_poedb.py --details  # scrape gem detail pages -> js/gem_details.js
 """
 
+import io
+import json
 import re
 import sys
 import time
@@ -486,6 +490,271 @@ def replace_all_sections(gems_js_text, gems_section, quest_section, vendor_secti
     )
 
 
+# == Icon download ============================================================
+
+
+def find_missing_icons(all_gems):
+    """Return list of gem entries whose icon PNG files don't exist."""
+    icons_dir = ROOT / "img" / "gems"
+    return [g for g in all_gems if not (icons_dir / g["icon"]).exists()]
+
+
+def fetch_gem_icon_url(eng_name):
+    """Fetch a gem's poedb page and extract the CDN icon URL."""
+    url = f"{POEDB_BASE}/kr/{eng_name}"
+    soup = fetch(url)
+    time.sleep(FETCH_DELAY)
+
+    for img in soup.find_all("img"):
+        src = img.get("src", "")
+        if "/Art/2DItems/Gems/" in src:
+            return src
+    return None
+
+
+def download_icon_image(icon_url):
+    """Download a webp image from CDN and return as PIL Image, or None on failure."""
+    from PIL import Image
+
+    # Try with Referer header (some CDNs require it)
+    cdn_headers = {**HEADERS, "Referer": "https://poedb.tw/"}
+    try:
+        resp = requests.get(icon_url, headers=cdn_headers, timeout=15)
+        resp.raise_for_status()
+        return Image.open(io.BytesIO(resp.content))
+    except Exception:
+        pass
+
+    return None
+
+
+def download_icons(missing_gems):
+    """Download missing gem icons from poedb/PoE CDN and save as PNG."""
+    from PIL import Image
+
+    icons_dir = ROOT / "img" / "gems"
+    icons_dir.mkdir(parents=True, exist_ok=True)
+
+    downloaded = 0
+    failed = []
+
+    for i, gem in enumerate(missing_gems):
+        eng_name = gem["icon"].replace(".png", "")
+        print(f"  [{i+1}/{len(missing_gems)}] {eng_name}...", end=" ", flush=True)
+
+        icon_url = fetch_gem_icon_url(eng_name)
+        if not icon_url:
+            print("SKIP (no icon URL found)")
+            failed.append(eng_name)
+            continue
+
+        img = download_icon_image(icon_url)
+        if img:
+            # Crop sprite strips (e.g. 234x78) to first square frame
+            w, h = img.size
+            if w > h * 1.5:
+                img = img.crop((0, 0, h, h))
+            img.save(icons_dir / gem["icon"], "PNG")
+            downloaded += 1
+            print("OK")
+        else:
+            print(f"FAIL (all CDNs returned errors)")
+            failed.append(eng_name)
+
+    print(f"\n  Downloaded: {downloaded}/{len(missing_gems)}")
+    if failed:
+        print(f"  Failed: {', '.join(failed)}")
+
+    return downloaded, failed
+
+
+# == Gem detail scraping (--details) ==========================================
+
+
+def parse_gem_details(soup):
+    """Parse gem detail data from a poedb gem page's .gemPopup element.
+
+    Returns dict with: tags, properties, requirements, description,
+    mods, reminder, qualityHeader, qualityMod, supportText, engName
+    """
+    popup = soup.find(class_="gemPopup")
+    if not popup:
+        return None
+
+    data = {}
+
+    # English name from <h1>
+    h1 = soup.find("h1")
+    data["engName"] = h1.get_text(strip=True) if h1 else ""
+
+    # Tags (first .property div containing .GemTags links)
+    tag_links = popup.find_all(class_="GemTags")
+    data["tags"] = [t.get_text(strip=True) for t in tag_links]
+
+    # Properties (all .property divs, skip the tags one)
+    all_props = popup.find_all(class_="property")
+    props = []
+    for p in all_props:
+        text = p.get_text(strip=True)
+        # Skip the one that's just tags joined with commas
+        if p.find(class_="GemTags"):
+            continue
+        if text:
+            props.append(text)
+    data["properties"] = props
+
+    # Requirements
+    req_el = popup.find(class_="requirements")
+    data["requirements"] = req_el.get_text(strip=True) if req_el else None
+
+    # Description
+    desc_el = popup.find(class_="secDescrText")
+    data["description"] = desc_el.get_text(strip=True) if desc_el else None
+
+    # Explicit mods
+    mod_els = popup.find_all(class_="explicitMod")
+    data["mods"] = [m.get_text(strip=True) for m in mod_els]
+
+    # Reminder text
+    reminder_el = popup.find(class_="reminderText")
+    data["reminder"] = reminder_el.get_text(strip=True) if reminder_el else None
+
+    # Quality header and mod
+    quality_hdr_el = popup.find(class_="text-type0")
+    data["qualityHeader"] = quality_hdr_el.get_text(strip=True) if quality_hdr_el else None
+    quality_mod_el = popup.find(class_="qualityMod")
+    data["qualityMod"] = quality_mod_el.get_text(strip=True) if quality_mod_el else None
+
+    # Support gem footer text (.default.fst-italic)
+    footer_el = popup.select_one(".default.fst-italic")
+    data["supportText"] = footer_el.get_text(strip=True) if footer_el else None
+
+    return data
+
+
+def scrape_gem_details(all_gems):
+    """Scrape detail pages for all gems and generate js/gem_details.js.
+
+    Reads existing gem_details.js to skip already-scraped gems (resume-friendly).
+    """
+    output_path = ROOT / "js" / "gem_details.js"
+
+    # Load existing details to support resume
+    existing = {}
+    if output_path.exists():
+        text = output_path.read_text(encoding="utf-8")
+        # Extract JSON-like content between first { and last }
+        m = re.search(r"const GEM_DETAILS\s*=\s*(\{.*\});", text, re.DOTALL)
+        if m:
+            try:
+                # Convert bare JS keys to quoted JSON keys for parsing
+                js_obj = m.group(1)
+                js_obj = re.sub(r'(?m)^(\s+)(tags|properties|requirements|description|mods|reminder|qualityHeader|qualityMod|supportText|engName):', r'\1"\2":', js_obj)
+                # Remove trailing commas (JS allows, JSON doesn't)
+                js_obj = re.sub(r',(\s*[}\]])', r'\1', js_obj)
+                existing = json.loads(js_obj)
+                print(f"  Loaded {len(existing)} existing entries from gem_details.js")
+            except json.JSONDecodeError as e:
+                print(f"  WARNING: Could not parse existing gem_details.js ({e}), starting fresh")
+
+    details = dict(existing)
+    total = len(all_gems)
+    scraped = 0
+    skipped = 0
+    failed = []
+
+    for i, gem in enumerate(all_gems):
+        gem_id = gem["id"]
+
+        if gem_id in details:
+            skipped += 1
+            continue
+
+        # Map gem ID back to English name for URL
+        eng_name = gem["icon"].replace(".png", "")
+        url = f"{POEDB_BASE}/kr/{eng_name}"
+
+        print(f"  [{i+1}/{total}] {gem_id} ({eng_name})...", end=" ", flush=True)
+
+        try:
+            soup = fetch(url)
+            time.sleep(FETCH_DELAY)
+
+            data = parse_gem_details(soup)
+            if data:
+                details[gem_id] = data
+                scraped += 1
+                print(f"OK ({len(data.get('mods', []))} mods)")
+            else:
+                print("SKIP (no .gemPopup found)")
+                failed.append(gem_id)
+        except Exception as e:
+            print(f"FAIL ({e})")
+            failed.append(gem_id)
+
+        # Periodically save progress
+        if scraped > 0 and scraped % 50 == 0:
+            _write_gem_details_js(output_path, details)
+            print(f"  -- Progress saved ({len(details)} entries) --")
+
+    # Final write
+    _write_gem_details_js(output_path, details)
+
+    print(f"\n{'='*60}")
+    print(f"  Total gems    : {total}")
+    print(f"  Already had   : {skipped}")
+    print(f"  Scraped       : {scraped}")
+    print(f"  Failed        : {len(failed)}")
+    print(f"  Total entries : {len(details)}")
+    print(f"{'='*60}")
+    print(f"\nWritten to {output_path}")
+
+    if failed:
+        print(f"Failed gems: {', '.join(failed)}")
+
+
+def _write_gem_details_js(output_path, details):
+    """Write gem details dict to js/gem_details.js as a JS const."""
+    # Sort by key for stable output
+    sorted_details = dict(sorted(details.items()))
+
+    # Build JS object string with proper formatting
+    lines = ["const GEM_DETAILS = {"]
+    for gem_id, data in sorted_details.items():
+        tags_str = json.dumps(data.get("tags", []), ensure_ascii=False)
+        props_str = json.dumps(data.get("properties", []), ensure_ascii=False)
+        mods_str = json.dumps(data.get("mods", []), ensure_ascii=False)
+
+        parts = [f'  "{gem_id}": {{']
+        parts.append(f'    tags: {tags_str},')
+        parts.append(f'    properties: {props_str},')
+
+        if data.get("requirements"):
+            parts.append(f'    requirements: {json.dumps(data["requirements"], ensure_ascii=False)},')
+        if data.get("description"):
+            parts.append(f'    description: {json.dumps(data["description"], ensure_ascii=False)},')
+
+        parts.append(f'    mods: {mods_str},')
+
+        if data.get("reminder"):
+            parts.append(f'    reminder: {json.dumps(data["reminder"], ensure_ascii=False)},')
+        if data.get("qualityHeader"):
+            parts.append(f'    qualityHeader: {json.dumps(data["qualityHeader"], ensure_ascii=False)},')
+        if data.get("qualityMod"):
+            parts.append(f'    qualityMod: {json.dumps(data["qualityMod"], ensure_ascii=False)},')
+        if data.get("supportText"):
+            parts.append(f'    supportText: {json.dumps(data["supportText"], ensure_ascii=False)},')
+        if data.get("engName"):
+            parts.append(f'    engName: {json.dumps(data["engName"], ensure_ascii=False)},')
+
+        parts.append('  },')
+        lines.append("\n".join(parts))
+
+    lines.append("};")
+
+    output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 # == Main =====================================================================
 
 
@@ -594,6 +863,31 @@ def main():
 
     print(f"\nWritten to {output_path}")
 
+    # Step 9: Download missing icons (if --icons flag)
+    if "--icons" in sys.argv:
+        print("\n=== Checking for missing gem icons ===\n")
+        missing = find_missing_icons(all_gems)
+        if missing:
+            print(f"  {len(missing)} missing icon(s) - downloading from poedb CDN...")
+            download_icons(missing)
+        else:
+            print("  All icon files present!")
+
+
+def main_details():
+    """Scrape gem detail pages and generate js/gem_details.js."""
+    print("=== scrape_poedb.py --details: Scraping gem detail pages ===\n")
+
+    # Load all gems from gems.js
+    gems_js_text = (ROOT / "js" / "gems.js").read_text(encoding="utf-8")
+    all_gems = parse_existing_gems(gems_js_text)
+    print(f"Loaded {len(all_gems)} gems from gems.js\n")
+
+    scrape_gem_details(all_gems)
+
 
 if __name__ == "__main__":
-    main()
+    if "--details" in sys.argv:
+        main_details()
+    else:
+        main()

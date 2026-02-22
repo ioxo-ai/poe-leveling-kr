@@ -223,15 +223,7 @@
           onGemClick(gem.id, qKey, filteredRewards, activeTab === 'quest' ? (group.maxSelect ?? 1) : null);
         });
 
-        card.addEventListener('mouseenter', (e) => {
-          showTooltip(gem, e);
-        });
-        card.addEventListener('mouseleave', () => {
-          hideTooltip();
-        });
-        card.addEventListener('mousemove', (e) => {
-          positionTooltip(e);
-        });
+        GemTooltip.attach(card, gem);
 
         grid.appendChild(card);
       });
@@ -286,62 +278,6 @@
     }
   }
 
-  // Tooltip
-  const COLOR_LABELS = { str: '힘', dex: '민첩', int: '지능' };
-
-  function showTooltip(gem, e) {
-    const tooltip = document.getElementById('gem-tooltip');
-    if (!tooltip) return;
-
-    const iconEl = document.getElementById('gem-tooltip-icon');
-    const nameEl = document.getElementById('gem-tooltip-name');
-    const typeEl = document.getElementById('gem-tooltip-type');
-    const attrEl = document.getElementById('gem-tooltip-attr');
-
-    if (gem.icon) {
-      iconEl.src = `img/gems/${gem.icon}`;
-      iconEl.style.display = '';
-    } else {
-      iconEl.style.display = 'none';
-    }
-
-    nameEl.textContent = isEnglishOn() ? `${gem.name} ${gemEngName(gem.id).toUpperCase()}` : gem.name;
-    typeEl.textContent = gem.type === 'support' ? '보조 젬' : '스킬 젬';
-    attrEl.textContent = COLOR_LABELS[gem.color] || '';
-    attrEl.className = `gem-tooltip-attr ${gem.color}`;
-
-    tooltip.style.display = 'flex';
-    positionTooltip(e);
-  }
-
-  function hideTooltip() {
-    const tooltip = document.getElementById('gem-tooltip');
-    if (tooltip) tooltip.style.display = 'none';
-  }
-
-  function positionTooltip(e) {
-    const tooltip = document.getElementById('gem-tooltip');
-    if (!tooltip || tooltip.style.display === 'none') return;
-
-    const offset = 12;
-    let x = e.clientX + offset;
-    let y = e.clientY + offset;
-
-    const rect = tooltip.getBoundingClientRect();
-    const w = rect.width || 200;
-    const h = rect.height || 80;
-
-    if (x + w > window.innerWidth - 8) {
-      x = e.clientX - w - offset;
-    }
-    if (y + h > window.innerHeight - 8) {
-      y = e.clientY - h - offset;
-    }
-
-    tooltip.style.left = x + 'px';
-    tooltip.style.top = y + 'px';
-  }
-
   // Modal control
   function openModal() {
     const overlay = document.getElementById('gem-modal-overlay');
@@ -354,7 +290,7 @@
   }
 
   function closeModal() {
-    hideTooltip();
+    GemTooltip.hide();
     const overlay = document.getElementById('gem-modal-overlay');
     if (overlay) {
       overlay.classList.remove('open');
@@ -443,7 +379,7 @@
     // Hide tooltip on scroll
     const modalBody = document.getElementById('gem-modal-body');
     if (modalBody) {
-      modalBody.addEventListener('scroll', hideTooltip);
+      modalBody.addEventListener('scroll', () => GemTooltip.hide());
     }
   }
 
